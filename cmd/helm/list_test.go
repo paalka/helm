@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"testing"
 
@@ -46,7 +47,7 @@ func TestListCmd(t *testing.T) {
 			resp: []*release.Release{
 				helm.ReleaseMock(&helm.MockReleaseOptions{Name: "atlas"}),
 			},
-			expected: "NAME \tREVISION\tUPDATED                 \tSTATUS  \tCHART           \tNAMESPACE\natlas\t1       \t(.*)\tDEPLOYED\tfoo-0.1.0-beta.1\tdefault  \n",
+			expected: fmt.Sprintf("NAME \tREVISION\tUPDATED                 \tSTATUS  \tCHART           \tNAMESPACE\tRELEASED BY\natlas\t1       \t(.*)\tDEPLOYED\tfoo-0.1.0-beta.1\tdefault  \t%s       \n", username),
 		},
 		{
 			name: "list, one deployed, one failed",

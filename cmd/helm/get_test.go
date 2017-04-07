@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"io"
 	"testing"
 
@@ -32,7 +33,7 @@ func TestGetCmd(t *testing.T) {
 			name:     "get with a release",
 			resp:     helm.ReleaseMock(&helm.MockReleaseOptions{Name: "thomas-guide"}),
 			args:     []string{"thomas-guide"},
-			expected: "REVISION: 1\nRELEASED: (.*)\nCHART: foo-0.1.0-beta.1\nUSER-SUPPLIED VALUES:\nname: \"value\"\nCOMPUTED VALUES:\nname: value\n\nHOOKS:\n---\n# pre-install-hook\n" + helm.MockHookTemplate + "\nMANIFEST:",
+			expected: fmt.Sprintf("REVISION: 1\nRELEASED: (.*)\nRELEASED BY: %s\nCHART: foo-0.1.0-beta.1\nUSER-SUPPLIED VALUES:\nname: \"value\"\nCOMPUTED VALUES:\nname: value\n\nHOOKS:\n---\n# pre-install-hook\n"+mockHookTemplate+"\nMANIFEST:", username),
 			rels:     []*release.Release{helm.ReleaseMock(&helm.MockReleaseOptions{Name: "thomas-guide"})},
 		},
 		{
