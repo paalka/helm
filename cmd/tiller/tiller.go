@@ -95,7 +95,6 @@ func main() {
 }
 
 func start() {
-
 	clientset, err := kube.New(nil).ClientSet()
 	if err != nil {
 		logger.Fatalf("Cannot initialize Kubernetes connection: %s", err)
@@ -132,7 +131,7 @@ func start() {
 		opts = append(opts, grpc.Creds(credentials.NewTLS(cfg)))
 	}
 
-	rootServer = tiller.NewServer(opts...)
+	rootServer = tiller.NewServer(kubeClient, opts...)
 
 	lstn, err := net.Listen("tcp", *grpcAddr)
 	if err != nil {
