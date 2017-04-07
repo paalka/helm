@@ -2,9 +2,7 @@
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
+you may not use this file except in compliance with the License. You may obtain a copy of the License at
     http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
@@ -172,7 +170,7 @@ func start() {
 		MinTime: time.Duration(20) * time.Second, // For compatibility with the client keepalive.ClientParameters
 	}))
 
-	rootServer = tiller.NewServer(opts...)
+	rootServer = tiller.NewServer(kubeClient, opts...)
 	healthpb.RegisterHealthServer(rootServer, healthSrv)
 
 	lstn, err := net.Listen("tcp", *grpcAddr)

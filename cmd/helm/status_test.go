@@ -133,10 +133,11 @@ func TestStatusCmd(t *testing.T) {
 
 }
 
-func outputWithStatus(status string) string {
-	return fmt.Sprintf("LAST DEPLOYED: %s\nNAMESPACE: \nSTATUS: %s",
+func outputWithStatus(status string, username string) string {
+	return fmt.Sprintf("LAST DEPLOYED: %s\nNAMESPACE: \nSTATUS: %s\nRELEASED BY: %s",
 		dateString,
-		status)
+		status,
+		username)
 }
 
 func releaseMockWithStatus(status *release.Status) *release.Release {
@@ -146,6 +147,7 @@ func releaseMockWithStatus(status *release.Status) *release.Release {
 			FirstDeployed: &date,
 			LastDeployed:  &date,
 			Status:        status,
+			Username:      username,
 		},
 	}
 }

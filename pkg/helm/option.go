@@ -23,7 +23,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
-
 	cpb "k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/proto/hapi/release"
 	rls "k8s.io/helm/pkg/proto/hapi/services"
@@ -69,6 +68,8 @@ type options struct {
 	contentReq rls.GetReleaseContentRequest
 	// release rollback options are applied directly to the rollback release request
 	rollbackReq rls.RollbackReleaseRequest
+	// withContext adds metadata to context before sending
+	withContext func(context.Context) context.Context
 	// before intercepts client calls before sending
 	before func(context.Context, proto.Message) error
 	// release history options are applied directly to the get release history request
@@ -95,6 +96,14 @@ func WithTLS(cfg *tls.Config) Option {
 	return func(opts *options) {
 		opts.useTLS = true
 		opts.tlsConfig = cfg
+	}
+}
+
+// WithContext returns an option that allows adding metadata to context of a helm client rpc
+// before being sent OTA to tiller.
+func WithContext(fn func(context.Context) context.Context) Option {
+	return func(opts *options) {
+		opts.withContext = fn
 	}
 }
 

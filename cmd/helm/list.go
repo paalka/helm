@@ -94,7 +94,7 @@ func newListCmd(client helm.Interface, out io.Writer) *cobra.Command {
 				list.filter = strings.Join(args, " ")
 			}
 			if list.client == nil {
-				list.client = newClient()
+				list.client = helm.NewClient(helm.Host(settings.TillerHost), helm.WithContext(loadAuthHeaders))
 			}
 			return list.run()
 		},
@@ -237,7 +237,7 @@ func formatList(rels []*release.Release, colWidth uint) string {
 	table := uitable.New()
 
 	table.MaxColWidth = colWidth
-	table.AddRow("NAME", "REVISION", "UPDATED", "STATUS", "CHART", "NAMESPACE")
+	table.AddRow("NAME", "REVISION", "UPDATED", "STATUS", "CHART", "NAMESPACE", "RELEASED BY")
 	for _, r := range rels {
 		md := r.GetChart().GetMetadata()
 		c := fmt.Sprintf("%s-%s", md.GetName(), md.GetVersion())
@@ -248,7 +248,8 @@ func formatList(rels []*release.Release, colWidth uint) string {
 		s := r.GetInfo().GetStatus().GetCode().String()
 		v := r.GetVersion()
 		n := r.GetNamespace()
-		table.AddRow(r.GetName(), v, t, s, c, n)
+		u := r.Info.Username
+		table.AddRow(r.GetName(), v, t, s, c, n, u)
 	}
 	return table.String()
 }

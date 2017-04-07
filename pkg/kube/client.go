@@ -42,9 +42,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/clientcmd"
 	batchinternal "k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/apis/core"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authorization/internalversion"
 	"k8s.io/kubernetes/pkg/kubectl"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/kubectl/resource"
@@ -83,9 +85,25 @@ var nopLogger = func(_ string, _ ...interface{}) {}
 // ResourceActorFunc performs an action on a single resource.
 type ResourceActorFunc func(*resource.Info) error
 
+// Discovery retrieves the DiscoveryClient
+func (c *Client) Discovery() (discovery.DiscoveryInterface, error) {
+	client, err := c.ClientSet()
+	if err != nil {
+		return nil, err
+	}
+	return client.Discovery(), nil
+}
+
+// Authorization retrieves the AuthorizationInterface
+func (c *Client) Authorization() (internalversion.AuthorizationInterface, error) {
+	client, err := c.ClientSet()
+	if err != nil {
+		return nil, err
+	}
+	return client.Authorization(), nil
+}
+
 // Create creates Kubernetes resources from an io.reader.
-//
-// Namespace will set the namespace.
 func (c *Client) Create(namespace string, reader io.Reader, timeout int64, shouldWait bool) error {
 	client, err := c.ClientSet()
 	if err != nil {
@@ -109,6 +127,7 @@ func (c *Client) Create(namespace string, reader io.Reader, timeout int64, shoul
 	return nil
 }
 
+// Namespace will set the namespace.
 func (c *Client) newBuilder(namespace string, reader io.Reader) *resource.Result {
 	return c.NewBuilder().
 		Internal().

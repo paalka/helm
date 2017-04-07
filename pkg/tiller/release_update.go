@@ -44,6 +44,7 @@ func (s *ReleaseServer) UpdateRelease(c ctx.Context, req *services.UpdateRelease
 		}
 		return nil, err
 	}
+	updatedRelease.Info.Username = getUserName(c)
 
 	if !req.DryRun {
 		s.Log("creating updated release for %s", req.Name)
