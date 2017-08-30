@@ -37,8 +37,8 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	authenticationapi "k8s.io/kubernetes/pkg/apis/authentication"
 
-	"k8s.io/helm/pkg/kube"
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/kube"
+	"github.com/paalka/helm/pkg/version"
 )
 
 // maxMsgSize use 20MB as the default message size limit.

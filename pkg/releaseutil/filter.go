@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package releaseutil // import "k8s.io/helm/pkg/releaseutil"
+package releaseutil // import "github.com/paalka/helm/pkg/releaseutil"
 
-import rspb "k8s.io/helm/pkg/proto/hapi/release"
+import rspb "github.com/paalka/helm/pkg/proto/hapi/release"
 
 // FilterFunc returns true if the release object satisfies
 // the predicate of the underlying filter func.

@@ -25,9 +25,9 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/kubectl/resource"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/kube"
-	"k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/kube"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 type mockEngine struct {

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rules // import "k8s.io/helm/pkg/lint/rules"
+package rules // import "github.com/paalka/helm/pkg/lint/rules"
 
 import (
 	"errors"
@@ -26,9 +26,9 @@ import (
 	"github.com/Masterminds/semver"
 
 	"github.com/asaskevich/govalidator"
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/lint/support"
-	"k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/lint/support"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 // Chartfile runs a set of linter rules related to Chart.yaml file

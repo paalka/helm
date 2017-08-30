@@ -27,9 +27,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/lint"
-	"k8s.io/helm/pkg/lint/support"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/lint"
+	"github.com/paalka/helm/pkg/lint/support"
 )
 
 var longLintHelp = `

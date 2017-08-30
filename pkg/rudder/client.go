@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rudder // import "k8s.io/helm/pkg/rudder"
+package rudder // import "github.com/paalka/helm/pkg/rudder"
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	rudderAPI "k8s.io/helm/pkg/proto/hapi/rudder"
+	rudderAPI "github.com/paalka/helm/pkg/proto/hapi/rudder"
 )
 
 // GrpcPort specifies port on which rudder will spawn a server

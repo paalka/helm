@@ -30,13 +30,13 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/ghodss/yaml"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/getter"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/repo"
-	"k8s.io/helm/pkg/resolver"
-	"k8s.io/helm/pkg/urlutil"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/getter"
+	"github.com/paalka/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/resolver"
+	"github.com/paalka/helm/pkg/urlutil"
 )
 
 // Manager handles the lifecycle of fetching, resolving, and storing dependencies.

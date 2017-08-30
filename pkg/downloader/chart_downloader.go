@@ -25,11 +25,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"k8s.io/helm/pkg/getter"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/provenance"
-	"k8s.io/helm/pkg/repo"
-	"k8s.io/helm/pkg/urlutil"
+	"github.com/paalka/helm/pkg/getter"
+	"github.com/paalka/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/provenance"
+	"github.com/paalka/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/urlutil"
 )
 
 // VerificationStrategy describes a strategy for determining whether to verify a chart.

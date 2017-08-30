@@ -14,7 +14,7 @@ limitations under the License.
 */
 
 // Package cache provides a key generator for vcs urls.
-package cache // import "k8s.io/helm/pkg/plugin/cache"
+package cache // import "github.com/paalka/helm/pkg/plugin/cache"
 
 import (
 	"net/url"

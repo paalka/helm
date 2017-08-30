@@ -24,8 +24,8 @@ import (
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/repo"
 )
 
 type repoListCmd struct {

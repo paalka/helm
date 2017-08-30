@@ -22,11 +22,11 @@ import (
 
 	ctx "golang.org/x/net/context"
 
-	"k8s.io/helm/pkg/hooks"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	relutil "k8s.io/helm/pkg/releaseutil"
-	"k8s.io/helm/pkg/timeconv"
+	"github.com/paalka/helm/pkg/hooks"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	relutil "github.com/paalka/helm/pkg/releaseutil"
+	"github.com/paalka/helm/pkg/timeconv"
 )
 
 // UninstallRelease deletes all of the resources associated with this release, and marks the release DELETED.

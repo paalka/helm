@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"regexp"
 
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	relutil "k8s.io/helm/pkg/releaseutil"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	relutil "github.com/paalka/helm/pkg/releaseutil"
 )
 
 // ListReleases lists the releases found by the server.

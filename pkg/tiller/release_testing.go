@@ -17,9 +17,9 @@ limitations under the License.
 package tiller
 
 import (
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	reltesting "k8s.io/helm/pkg/releasetesting"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	reltesting "github.com/paalka/helm/pkg/releasetesting"
 )
 
 // RunReleaseTest runs pre-defined tests stored as hooks on a given release

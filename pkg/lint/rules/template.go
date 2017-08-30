@@ -25,11 +25,11 @@ import (
 
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/version"
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/engine"
-	"k8s.io/helm/pkg/lint/support"
-	"k8s.io/helm/pkg/timeconv"
-	tversion "k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/engine"
+	"github.com/paalka/helm/pkg/lint/support"
+	"github.com/paalka/helm/pkg/timeconv"
+	tversion "github.com/paalka/helm/pkg/version"
 )
 
 // Templates lints the templates in the Linter.

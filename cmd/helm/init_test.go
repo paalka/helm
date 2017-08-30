@@ -35,8 +35,8 @@ import (
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	testcore "k8s.io/client-go/testing"
 
-	"k8s.io/helm/cmd/helm/installer"
-	"k8s.io/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/cmd/helm/installer"
+	"github.com/paalka/helm/pkg/helm/helmpath"
 )
 
 func TestInitCmd(t *testing.T) {

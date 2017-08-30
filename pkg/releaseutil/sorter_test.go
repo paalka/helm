@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package releaseutil // import "k8s.io/helm/pkg/releaseutil"
+package releaseutil // import "github.com/paalka/helm/pkg/releaseutil"
 
 import (
 	"testing"
 	"time"
 
-	rspb "k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/timeconv"
+	rspb "github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/timeconv"
 )
 
 // note: this test data is shared with filter_test.go.

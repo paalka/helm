@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/helm/helmpath"
 )
 
 func TestVersionEquals(t *testing.T) {

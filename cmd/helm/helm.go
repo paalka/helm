@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main // import "k8s.io/helm/cmd/helm"
+package main // import "github.com/paalka/helm/cmd/helm"
 
 import (
 	"encoding/base64"
@@ -34,11 +34,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 
-	"k8s.io/helm/pkg/helm"
-	helm_env "k8s.io/helm/pkg/helm/environment"
-	"k8s.io/helm/pkg/helm/portforwarder"
-	"k8s.io/helm/pkg/kube"
-	"k8s.io/helm/pkg/tlsutil"
+	"github.com/paalka/helm/pkg/helm"
+	helm_env "github.com/paalka/helm/pkg/helm/environment"
+	"github.com/paalka/helm/pkg/helm/portforwarder"
+	"github.com/paalka/helm/pkg/kube"
+	"github.com/paalka/helm/pkg/tlsutil"
 )
 
 var (
@@ -254,7 +254,7 @@ func getInternalKubeClient(context string) (*rest.Config, internalclientset.Inte
 }
 
 func loadAuthHeaders(ctx context.Context) context.Context {
-	c, err := kube.GetConfig(kubeContext).ClientConfig()
+	c, err := kube.GetConfig("").ClientConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to extract authentication headers: %s\n", err)
 		os.Exit(1)

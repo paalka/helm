@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	util "k8s.io/helm/pkg/releaseutil"
+	util "github.com/paalka/helm/pkg/releaseutil"
 )
 
 func TestKindSorter(t *testing.T) {

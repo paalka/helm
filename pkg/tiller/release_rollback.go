@@ -21,10 +21,10 @@ import (
 
 	ctx "golang.org/x/net/context"
 
-	"k8s.io/helm/pkg/hooks"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	"k8s.io/helm/pkg/timeconv"
+	"github.com/paalka/helm/pkg/hooks"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/timeconv"
 )
 
 // RollbackRelease rolls back to a previous version of the given release.

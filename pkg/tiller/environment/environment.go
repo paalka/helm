@@ -29,12 +29,12 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/kubectl/resource"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/engine"
-	"k8s.io/helm/pkg/kube"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/storage"
-	"k8s.io/helm/pkg/storage/driver"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/engine"
+	"github.com/paalka/helm/pkg/kube"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/storage"
+	"github.com/paalka/helm/pkg/storage/driver"
 )
 
 // DefaultTillerNamespace is the default namespace for Tiller.

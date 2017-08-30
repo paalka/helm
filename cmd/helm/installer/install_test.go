@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package installer // import "k8s.io/helm/cmd/helm/installer"
+package installer // import "github.com/paalka/helm/cmd/helm/installer"
 
 import (
 	"os"
@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	testcore "k8s.io/client-go/testing"
 
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/version"
 )
 
 func TestDeploymentManifest(t *testing.T) {

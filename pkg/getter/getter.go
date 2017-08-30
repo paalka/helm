@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"k8s.io/helm/pkg/helm/environment"
+	"github.com/paalka/helm/pkg/helm/environment"
 )
 
 // Getter is an interface to support GET to the specified URL.

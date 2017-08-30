@@ -18,7 +18,7 @@ package resolver
 import (
 	"testing"
 
-	"k8s.io/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/chartutil"
 )
 
 func TestResolve(t *testing.T) {

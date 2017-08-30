@@ -21,7 +21,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"k8s.io/kubernetes/pkg/api"
 
-	rspb "k8s.io/helm/pkg/proto/hapi/release"
+	rspb "github.com/paalka/helm/pkg/proto/hapi/release"
 )
 
 func TestConfigMapName(t *testing.T) {

@@ -13,13 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package installer // import "k8s.io/helm/pkg/plugin/installer"
+package installer // import "github.com/paalka/helm/pkg/plugin/installer"
 
 import (
 	"os"
 	"path/filepath"
 
-	"k8s.io/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/helm/helmpath"
 )
 
 type base struct {

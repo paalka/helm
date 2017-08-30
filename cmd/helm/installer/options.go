@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package installer // import "k8s.io/helm/cmd/helm/installer"
+package installer // import "github.com/paalka/helm/cmd/helm/installer"
 
 import (
 	"fmt"
 
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/version"
 )
 
 const defaultImage = "gcr.io/kubernetes-helm/tiller"

@@ -21,8 +21,8 @@ import (
 	"io"
 	"net/http"
 
-	"k8s.io/helm/pkg/tlsutil"
-	"k8s.io/helm/pkg/urlutil"
+	"github.com/paalka/helm/pkg/tlsutil"
+	"github.com/paalka/helm/pkg/urlutil"
 )
 
 //httpGetter is the efault HTTP(/S) backend handler

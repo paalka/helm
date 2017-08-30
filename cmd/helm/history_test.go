@@ -22,8 +22,8 @@ import (
 	"regexp"
 	"testing"
 
-	"k8s.io/helm/pkg/helm"
-	rpb "k8s.io/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/helm"
+	rpb "github.com/paalka/helm/pkg/proto/hapi/release"
 )
 
 func TestHistoryCmd(t *testing.T) {

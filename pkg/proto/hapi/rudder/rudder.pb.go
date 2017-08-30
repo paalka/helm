@@ -27,8 +27,8 @@ package rudder
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import hapi_release3 "k8s.io/helm/pkg/proto/hapi/release"
-import hapi_release5 "k8s.io/helm/pkg/proto/hapi/release"
+import hapi_release3 "github.com/paalka/helm/pkg/proto/hapi/release"
+import hapi_release5 "github.com/paalka/helm/pkg/proto/hapi/release"
 
 import (
 	context "golang.org/x/net/context"

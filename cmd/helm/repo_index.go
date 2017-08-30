@@ -23,7 +23,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/repo"
 )
 
 const repoIndexDesc = `

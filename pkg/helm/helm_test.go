@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package helm // import "k8s.io/helm/pkg/helm"
+package helm // import "github.com/paalka/helm/pkg/helm"
 
 import (
 	"errors"
@@ -25,10 +25,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
-	"k8s.io/helm/pkg/chartutil"
-	cpb "k8s.io/helm/pkg/proto/hapi/chart"
-	rls "k8s.io/helm/pkg/proto/hapi/release"
-	tpb "k8s.io/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/chartutil"
+	cpb "github.com/paalka/helm/pkg/proto/hapi/chart"
+	rls "github.com/paalka/helm/pkg/proto/hapi/release"
+	tpb "github.com/paalka/helm/pkg/proto/hapi/services"
 )
 
 // Path to example charts relative to pkg/helm.

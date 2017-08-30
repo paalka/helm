@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package lint // import "k8s.io/helm/pkg/lint"
+package lint // import "github.com/paalka/helm/pkg/lint"
 
 import (
 	"path/filepath"
 
-	"k8s.io/helm/pkg/lint/rules"
-	"k8s.io/helm/pkg/lint/support"
+	"github.com/paalka/helm/pkg/lint/rules"
+	"github.com/paalka/helm/pkg/lint/support"
 )
 
 // All runs all of the available linters on the given base directory.

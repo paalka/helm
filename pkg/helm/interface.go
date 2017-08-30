@@ -17,8 +17,8 @@ limitations under the License.
 package helm
 
 import (
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	rls "k8s.io/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	rls "github.com/paalka/helm/pkg/proto/hapi/services"
 )
 
 // Interface for helm client for mocking in tests

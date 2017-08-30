@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"k8s.io/helm/pkg/getter"
-	"k8s.io/helm/pkg/helm/environment"
-	"k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/getter"
+	"github.com/paalka/helm/pkg/helm/environment"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 const (

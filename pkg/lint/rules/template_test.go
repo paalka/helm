@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/helm/pkg/lint/support"
+	"github.com/paalka/helm/pkg/lint/support"
 )
 
 const templateTestBasedir = "./testdata/albatross"

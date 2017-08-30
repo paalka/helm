@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package installer // import "k8s.io/helm/pkg/plugin/installer"
+package installer // import "github.com/paalka/helm/pkg/plugin/installer"
 
 import (
 	"errors"
@@ -24,8 +24,8 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/Masterminds/vcs"
 
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/plugin/cache"
+	"github.com/paalka/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/plugin/cache"
 )
 
 // VCSInstaller installs plugins from remote a repository.

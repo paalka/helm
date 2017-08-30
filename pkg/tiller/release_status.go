@@ -22,8 +22,8 @@ import (
 
 	ctx "golang.org/x/net/context"
 
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
 )
 
 // GetReleaseStatus gets the status information for a named release.

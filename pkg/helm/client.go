@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package helm // import "k8s.io/helm/pkg/helm"
+package helm // import "github.com/paalka/helm/pkg/helm"
 
 import (
 	"io"
@@ -24,9 +24,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	rls "k8s.io/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	rls "github.com/paalka/helm/pkg/proto/hapi/services"
 )
 
 // Client manages client side of the Helm-Tiller protocol.

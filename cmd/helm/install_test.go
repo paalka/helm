@@ -25,7 +25,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/helm"
+	"github.com/paalka/helm/pkg/helm"
 )
 
 func TestInstall(t *testing.T) {

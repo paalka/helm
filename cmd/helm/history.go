@@ -23,10 +23,10 @@ import (
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/timeconv"
+	"github.com/paalka/helm/pkg/helm"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/timeconv"
 )
 
 var historyHelp = `

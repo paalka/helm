@@ -29,13 +29,13 @@ import (
 	"google.golang.org/grpc/metadata"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/fake"
 
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	"k8s.io/helm/pkg/storage"
-	"k8s.io/helm/pkg/storage/driver"
-	"k8s.io/helm/pkg/tiller/environment"
+	"github.com/paalka/helm/pkg/helm"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/storage"
+	"github.com/paalka/helm/pkg/storage/driver"
+	"github.com/paalka/helm/pkg/tiller/environment"
 )
 
 const notesText = "my notes here"

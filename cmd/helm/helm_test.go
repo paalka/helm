@@ -31,11 +31,11 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/helm"
+	"github.com/paalka/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/repo"
 )
 
 var mockHookTemplate = `apiVersion: v1

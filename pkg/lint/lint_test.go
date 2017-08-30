@@ -19,7 +19,7 @@ package lint
 import (
 	"strings"
 
-	"k8s.io/helm/pkg/lint/support"
+	"github.com/paalka/helm/pkg/lint/support"
 
 	"testing"
 )

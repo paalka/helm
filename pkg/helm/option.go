@@ -22,10 +22,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
-	cpb "k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	rls "k8s.io/helm/pkg/proto/hapi/services"
-	"k8s.io/helm/pkg/version"
+	cpb "github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	rls "github.com/paalka/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/version"
 )
 
 // Option allows specifying various settings configurable by

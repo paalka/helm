@@ -20,9 +20,9 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"k8s.io/helm/pkg/downloader"
-	"k8s.io/helm/pkg/getter"
-	"k8s.io/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/downloader"
+	"github.com/paalka/helm/pkg/getter"
+	"github.com/paalka/helm/pkg/helm/helmpath"
 )
 
 const dependencyUpDesc = `

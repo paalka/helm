@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"testing"
 
-	"k8s.io/helm/pkg/repo/repotest"
+	"github.com/paalka/helm/pkg/repo/repotest"
 )
 
 func TestFetchCmd(t *testing.T) {

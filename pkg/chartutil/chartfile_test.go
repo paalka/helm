@@ -19,7 +19,7 @@ package chartutil
 import (
 	"testing"
 
-	"k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 const testfile = "testdata/chartfiletest.yaml"

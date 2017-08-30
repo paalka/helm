@@ -21,7 +21,7 @@ import (
 	"os"
 	"os/exec"
 
-	"k8s.io/helm/pkg/plugin"
+	"github.com/paalka/helm/pkg/plugin"
 
 	"github.com/spf13/cobra"
 )

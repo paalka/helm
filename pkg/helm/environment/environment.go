@@ -28,7 +28,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"k8s.io/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/helm/helmpath"
 )
 
 // DefaultHelmHome is the default HELM_HOME.

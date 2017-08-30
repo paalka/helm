@@ -21,8 +21,8 @@ import (
 	"os"
 	"testing"
 
-	"k8s.io/helm/pkg/repo"
-	"k8s.io/helm/pkg/repo/repotest"
+	"github.com/paalka/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/repo/repotest"
 )
 
 var testName = "test-name"

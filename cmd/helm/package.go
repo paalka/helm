@@ -29,13 +29,13 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/downloader"
-	"k8s.io/helm/pkg/getter"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/provenance"
-	"k8s.io/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/downloader"
+	"github.com/paalka/helm/pkg/getter"
+	"github.com/paalka/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/provenance"
+	"github.com/paalka/helm/pkg/repo"
 )
 
 const packageDesc = `

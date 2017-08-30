@@ -29,14 +29,14 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	relutil "k8s.io/helm/pkg/releaseutil"
-	"k8s.io/helm/pkg/tiller/environment"
-	"k8s.io/helm/pkg/timeconv"
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	relutil "github.com/paalka/helm/pkg/releaseutil"
+	"github.com/paalka/helm/pkg/tiller/environment"
+	"github.com/paalka/helm/pkg/timeconv"
+	"github.com/paalka/helm/pkg/version"
 )
 
 // releaseNameMaxLen is the maximum length of a release name.

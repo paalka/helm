@@ -1,4 +1,4 @@
-package: k8s.io/helm
+package: github.com/paalka/helm
 import:
 - package: golang.org/x/net
   subpackages:

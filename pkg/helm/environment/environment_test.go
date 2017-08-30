@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/helm/helmpath"
 
 	"github.com/spf13/pflag"
 )

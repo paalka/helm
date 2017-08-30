@@ -20,9 +20,9 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/helm"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
 )
 
 func TestRollbackRelease(t *testing.T) {

@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"testing"
 
-	rspb "k8s.io/helm/pkg/proto/hapi/release"
+	rspb "github.com/paalka/helm/pkg/proto/hapi/release"
 )
 
 func TestMemoryName(t *testing.T) {

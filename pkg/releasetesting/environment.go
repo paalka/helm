@@ -24,9 +24,9 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	"k8s.io/helm/pkg/tiller/environment"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/tiller/environment"
 )
 
 // Environment encapsulates information about where test suite executes and returns results

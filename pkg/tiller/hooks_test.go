@@ -22,9 +22,9 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	util "k8s.io/helm/pkg/releaseutil"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	util "github.com/paalka/helm/pkg/releaseutil"
 )
 
 func TestSortManifests(t *testing.T) {

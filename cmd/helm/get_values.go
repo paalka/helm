@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/helm"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/helm"
 )
 
 var getValuesHelp = `

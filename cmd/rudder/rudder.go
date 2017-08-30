@@ -26,11 +26,11 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 
-	"k8s.io/helm/pkg/kube"
-	rudderAPI "k8s.io/helm/pkg/proto/hapi/rudder"
-	"k8s.io/helm/pkg/rudder"
-	"k8s.io/helm/pkg/tiller"
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/kube"
+	rudderAPI "github.com/paalka/helm/pkg/proto/hapi/rudder"
+	"github.com/paalka/helm/pkg/rudder"
+	"github.com/paalka/helm/pkg/tiller"
+	"github.com/paalka/helm/pkg/version"
 )
 
 var kubeClient *kube.Client

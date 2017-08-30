@@ -26,10 +26,10 @@ import (
 
 	"github.com/Masterminds/semver"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/provenance"
-	"k8s.io/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/provenance"
+	"github.com/paalka/helm/pkg/repo"
 )
 
 // Resolver resolves dependencies from semantic version ranges to a particular version.

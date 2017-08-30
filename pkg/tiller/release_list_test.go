@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
 )
 
 func TestListReleases(t *testing.T) {

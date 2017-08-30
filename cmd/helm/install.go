@@ -32,15 +32,15 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/downloader"
-	"k8s.io/helm/pkg/getter"
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/kube"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/repo"
-	"k8s.io/helm/pkg/strvals"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/downloader"
+	"github.com/paalka/helm/pkg/getter"
+	"github.com/paalka/helm/pkg/helm"
+	"github.com/paalka/helm/pkg/kube"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/strvals"
 )
 
 const installDesc = `

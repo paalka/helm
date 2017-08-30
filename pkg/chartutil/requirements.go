@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 const (

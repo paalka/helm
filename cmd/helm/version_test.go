@@ -20,8 +20,8 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/helm"
+	"github.com/paalka/helm/pkg/version"
 )
 
 func TestVersion(t *testing.T) {

@@ -26,9 +26,9 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/provenance"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/provenance"
 )
 
 const indexHTMLTemplate = `

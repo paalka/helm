@@ -19,8 +19,8 @@ package tiller
 import (
 	"golang.org/x/net/context"
 
-	tpb "k8s.io/helm/pkg/proto/hapi/services"
-	relutil "k8s.io/helm/pkg/releaseutil"
+	tpb "github.com/paalka/helm/pkg/proto/hapi/services"
+	relutil "github.com/paalka/helm/pkg/releaseutil"
 )
 
 // GetHistory gets the history for a given release.

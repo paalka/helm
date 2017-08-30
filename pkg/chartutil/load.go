@@ -31,8 +31,8 @@ import (
 	"github.com/facebookgo/symwalk"
 	"github.com/golang/protobuf/ptypes/any"
 
-	"k8s.io/helm/pkg/ignore"
-	"k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/ignore"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 // Load takes a string name, tries to resolve it to a file or directory, and then loads it.

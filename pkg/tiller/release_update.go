@@ -21,11 +21,11 @@ import (
 
 	ctx "golang.org/x/net/context"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/hooks"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	"k8s.io/helm/pkg/timeconv"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/hooks"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/timeconv"
 )
 
 // UpdateRelease takes an existing release and new information, and upgrades the release.

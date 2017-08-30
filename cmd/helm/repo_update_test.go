@@ -23,10 +23,10 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/helm/pkg/getter"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/repo"
-	"k8s.io/helm/pkg/repo/repotest"
+	"github.com/paalka/helm/pkg/getter"
+	"github.com/paalka/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/repo"
+	"github.com/paalka/helm/pkg/repo/repotest"
 )
 
 func TestUpdateCmd(t *testing.T) {

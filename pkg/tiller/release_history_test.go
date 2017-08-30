@@ -20,9 +20,9 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/helm/pkg/helm"
-	rpb "k8s.io/helm/pkg/proto/hapi/release"
-	tpb "k8s.io/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/helm"
+	rpb "github.com/paalka/helm/pkg/proto/hapi/release"
+	tpb "github.com/paalka/helm/pkg/proto/hapi/services"
 )
 
 func TestGetHistory_WithRevisions(t *testing.T) {

@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 
-	"k8s.io/helm/pkg/kube"
+	"github.com/paalka/helm/pkg/kube"
 )
 
 var (

@@ -24,10 +24,10 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"k8s.io/kubernetes/pkg/api"
 
-	"k8s.io/helm/pkg/hooks"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	util "k8s.io/helm/pkg/releaseutil"
-	"k8s.io/helm/pkg/timeconv"
+	"github.com/paalka/helm/pkg/hooks"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	util "github.com/paalka/helm/pkg/releaseutil"
+	"github.com/paalka/helm/pkg/timeconv"
 )
 
 // TestSuite what tests are run, results, and metadata

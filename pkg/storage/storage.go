@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package storage // import "k8s.io/helm/pkg/storage"
+package storage // import "github.com/paalka/helm/pkg/storage"
 
 import (
 	"fmt"
 
-	rspb "k8s.io/helm/pkg/proto/hapi/release"
-	relutil "k8s.io/helm/pkg/releaseutil"
-	"k8s.io/helm/pkg/storage/driver"
+	rspb "github.com/paalka/helm/pkg/proto/hapi/release"
+	relutil "github.com/paalka/helm/pkg/releaseutil"
+	"github.com/paalka/helm/pkg/storage/driver"
 )
 
 // Storage represents a storage engine for a Release.

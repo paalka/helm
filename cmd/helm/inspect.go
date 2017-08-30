@@ -23,7 +23,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/chartutil"
 )
 
 const inspectDesc = `

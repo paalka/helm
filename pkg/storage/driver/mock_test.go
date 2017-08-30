@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package driver // import "k8s.io/helm/pkg/storage/driver"
+package driver // import "github.com/paalka/helm/pkg/storage/driver"
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 
-	rspb "k8s.io/helm/pkg/proto/hapi/release"
+	rspb "github.com/paalka/helm/pkg/proto/hapi/release"
 )
 
 func releaseStub(name string, vers int32, namespace string, code rspb.Status_Code) *rspb.Release {

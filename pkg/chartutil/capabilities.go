@@ -17,7 +17,7 @@ package chartutil
 
 import (
 	"k8s.io/apimachinery/pkg/version"
-	tversion "k8s.io/helm/pkg/proto/hapi/version"
+	tversion "github.com/paalka/helm/pkg/proto/hapi/version"
 )
 
 // DefaultVersionSet is the default version set, which includes only Core V1 ("v1").

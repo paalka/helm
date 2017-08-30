@@ -26,9 +26,9 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 
 	kversion "k8s.io/apimachinery/pkg/version"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/timeconv"
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/timeconv"
+	"github.com/paalka/helm/pkg/version"
 )
 
 func TestReadValues(t *testing.T) {

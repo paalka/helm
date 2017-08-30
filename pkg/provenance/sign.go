@@ -33,8 +33,8 @@ import (
 	"golang.org/x/crypto/openpgp/clearsign"
 	"golang.org/x/crypto/openpgp/packet"
 
-	"k8s.io/helm/pkg/chartutil"
-	hapi "k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/chartutil"
+	hapi "github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 var defaultPGPConfig = packet.Config{

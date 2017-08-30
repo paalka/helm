@@ -19,7 +19,7 @@ package tiller
 import (
 	ctx "golang.org/x/net/context"
 
-	"k8s.io/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
 )
 
 // GetReleaseContent gets all of the stored information for the given release.

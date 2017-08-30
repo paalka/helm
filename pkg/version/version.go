@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package version // import "k8s.io/helm/pkg/version"
+package version // import "github.com/paalka/helm/pkg/version"
 
-import "k8s.io/helm/pkg/proto/hapi/version"
+import "github.com/paalka/helm/pkg/proto/hapi/version"
 
 var (
 	// Version is the current version of the Helm.

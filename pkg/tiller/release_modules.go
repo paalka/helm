@@ -25,14 +25,14 @@ import (
 
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/kube"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	rudderAPI "k8s.io/helm/pkg/proto/hapi/rudder"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	relutil "k8s.io/helm/pkg/releaseutil"
-	"k8s.io/helm/pkg/rudder"
-	"k8s.io/helm/pkg/tiller/environment"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/kube"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	rudderAPI "github.com/paalka/helm/pkg/proto/hapi/rudder"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	relutil "github.com/paalka/helm/pkg/releaseutil"
+	"github.com/paalka/helm/pkg/rudder"
+	"github.com/paalka/helm/pkg/tiller/environment"
 )
 
 // ReleaseModule is an interface that allows ReleaseServer to run operations on release via either local implementation or Rudder service

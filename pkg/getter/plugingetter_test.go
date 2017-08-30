@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/helm/pkg/helm/environment"
-	"k8s.io/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/helm/environment"
+	"github.com/paalka/helm/pkg/helm/helmpath"
 )
 
 func hh(debug bool) environment.EnvSettings {

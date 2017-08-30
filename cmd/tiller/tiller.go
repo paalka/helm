@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main // import "k8s.io/helm/cmd/tiller"
+package main // import "github.com/paalka/helm/cmd/tiller"
 
 import (
 	"crypto/tls"
@@ -32,14 +32,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"k8s.io/helm/pkg/kube"
-	"k8s.io/helm/pkg/proto/hapi/services"
-	"k8s.io/helm/pkg/storage"
-	"k8s.io/helm/pkg/storage/driver"
-	"k8s.io/helm/pkg/tiller"
-	"k8s.io/helm/pkg/tiller/environment"
-	"k8s.io/helm/pkg/tlsutil"
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/kube"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/storage"
+	"github.com/paalka/helm/pkg/storage/driver"
+	"github.com/paalka/helm/pkg/tiller"
+	"github.com/paalka/helm/pkg/tiller/environment"
+	"github.com/paalka/helm/pkg/tlsutil"
+	"github.com/paalka/helm/pkg/version"
 )
 
 const (

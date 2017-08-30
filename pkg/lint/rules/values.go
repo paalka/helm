@@ -21,8 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/lint/support"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/lint/support"
 )
 
 // Values lints a chart's values.yaml file.

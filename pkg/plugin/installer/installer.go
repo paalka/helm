@@ -22,7 +22,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"k8s.io/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/helm/helmpath"
 )
 
 // ErrMissingMetadata indicates that plugin.yaml is missing.

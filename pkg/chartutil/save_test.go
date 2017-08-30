@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 func TestSave(t *testing.T) {

@@ -25,9 +25,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"k8s.io/helm/pkg/helm"
-	pb "k8s.io/helm/pkg/proto/hapi/version"
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/helm"
+	pb "github.com/paalka/helm/pkg/proto/hapi/version"
+	"github.com/paalka/helm/pkg/version"
 )
 
 const versionDesc = `

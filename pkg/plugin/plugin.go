@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin // import "k8s.io/helm/pkg/plugin"
+package plugin // import "github.com/paalka/helm/pkg/plugin"
 
 import (
 	"io/ioutil"
@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	helm_env "k8s.io/helm/pkg/helm/environment"
+	helm_env "github.com/paalka/helm/pkg/helm/environment"
 
 	"github.com/ghodss/yaml"
 )

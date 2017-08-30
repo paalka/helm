@@ -19,8 +19,8 @@ package tiller
 import (
 	ctx "golang.org/x/net/context"
 
-	"k8s.io/helm/pkg/proto/hapi/services"
-	"k8s.io/helm/pkg/version"
+	"github.com/paalka/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/version"
 )
 
 // GetVersion sends the server version.

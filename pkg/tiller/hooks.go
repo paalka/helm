@@ -25,10 +25,10 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/hooks"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	util "k8s.io/helm/pkg/releaseutil"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/hooks"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	util "github.com/paalka/helm/pkg/releaseutil"
 )
 
 var events = map[string]release.Hook_Event{

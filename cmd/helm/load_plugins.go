@@ -25,7 +25,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"k8s.io/helm/pkg/plugin"
+	"github.com/paalka/helm/pkg/plugin"
 )
 
 // loadPlugins loads plugins into the command list.

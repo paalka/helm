@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/plugin"
-	"k8s.io/helm/pkg/plugin/installer"
+	"github.com/paalka/helm/pkg/helm/helmpath"
+	"github.com/paalka/helm/pkg/plugin"
+	"github.com/paalka/helm/pkg/plugin/installer"
 
 	"github.com/spf13/cobra"
 )

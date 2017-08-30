@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package helm // import "k8s.io/helm/pkg/helm"
+package helm // import "github.com/paalka/helm/pkg/helm"
 
 import (
 	"fmt"
 	"sync"
 
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	rls "k8s.io/helm/pkg/proto/hapi/services"
-	"k8s.io/helm/pkg/proto/hapi/version"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/proto/hapi/release"
+	rls "github.com/paalka/helm/pkg/proto/hapi/services"
+	"github.com/paalka/helm/pkg/proto/hapi/version"
 )
 
 // FakeClient implements Interface

@@ -26,8 +26,8 @@ import (
 
 	"github.com/Masterminds/sprig"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 // Engine is an implementation of 'cmd/tiller/environment'.Engine that uses Go templates.

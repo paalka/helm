@@ -23,9 +23,9 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/lint/support"
-	"k8s.io/helm/pkg/proto/hapi/chart"
+	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/lint/support"
+	"github.com/paalka/helm/pkg/proto/hapi/chart"
 )
 
 const (
