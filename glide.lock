@@ -1,5 +1,5 @@
-hash: 68a54d489b612a3a1aa1e7c664fdb07c431a87717d4f60685ce847dc65f82b9b
-updated: 2017-08-30T12:58:42.978961559+02:00
+hash: 2f82e3ea5a223d3890da640d392a6a284070d270bbe87b0adb8f62adf42ca67a
+updated: 2017-09-04T09:55:34.369907416+02:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -320,7 +320,7 @@ imports:
   - pkg/util/feature
   - pkg/util/flag
 - name: k8s.io/kubernetes
-  version: d090cd0e2bf432034b42de5d098d999bc99de043
+  version: 945cef642eafecc99ec49d2e68efbbb679b3b23f
   subpackages:
   - cmd/kubeadm/app/apis/kubeadm
   - federation/apis/federation
