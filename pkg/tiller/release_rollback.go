@@ -22,6 +22,7 @@ import (
 	ctx "golang.org/x/net/context"
 
 	"github.com/paalka/helm/pkg/hooks"
+	"github.com/paalka/helm/pkg/kube"
 	"github.com/paalka/helm/pkg/proto/hapi/release"
 	"github.com/paalka/helm/pkg/proto/hapi/services"
 	"github.com/paalka/helm/pkg/timeconv"
@@ -42,8 +43,14 @@ func (s *ReleaseServer) RollbackRelease(c ctx.Context, req *services.RollbackRel
 			return nil, err
 		}
 	}
+
+	usrCli, err := getUserClient(c)
+	if err != nil {
+		return nil, err
+	}
+
 	s.Log("performing rollback of %s", req.Name)
-	res, err := s.performRollback(currentRelease, targetRelease, req)
+	res, err := s.performRollback(currentRelease, targetRelease, req, usrCli)
 	if err != nil {
 		return res, err
 	}
@@ -112,7 +119,7 @@ func (s *ReleaseServer) prepareRollback(req *services.RollbackReleaseRequest) (*
 	return crls, target, nil
 }
 
-func (s *ReleaseServer) performRollback(currentRelease, targetRelease *release.Release, req *services.RollbackReleaseRequest) (*services.RollbackReleaseResponse, error) {
+func (s *ReleaseServer) performRollback(currentRelease, targetRelease *release.Release, req *services.RollbackReleaseRequest, usrCli *kube.Client) (*services.RollbackReleaseResponse, error) {
 	res := &services.RollbackReleaseResponse{Release: targetRelease}
 
 	if req.DryRun {
@@ -122,14 +129,14 @@ func (s *ReleaseServer) performRollback(currentRelease, targetRelease *release.R
 
 	// pre-rollback hooks
 	if !req.DisableHooks {
-		if err := s.execHook(targetRelease.Hooks, targetRelease.Name, targetRelease.Namespace, hooks.PreRollback, req.Timeout); err != nil {
+		if err := s.execHook(targetRelease.Hooks, targetRelease.Name, targetRelease.Namespace, hooks.PreRollback, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	} else {
 		s.Log("rollback hooks disabled for %s", req.Name)
 	}
 
-	if err := s.ReleaseModule.Rollback(currentRelease, targetRelease, req, s.env); err != nil {
+	if err := s.ReleaseModule.Rollback(currentRelease, targetRelease, req, usrCli); err != nil {
 		msg := fmt.Sprintf("Rollback %q failed: %s", targetRelease.Name, err)
 		s.Log("warning: %s", msg)
 		currentRelease.Info.Status.Code = release.Status_SUPERSEDED
@@ -142,7 +149,7 @@ func (s *ReleaseServer) performRollback(currentRelease, targetRelease *release.R
 
 	// post-rollback hooks
 	if !req.DisableHooks {
-		if err := s.execHook(targetRelease.Hooks, targetRelease.Name, targetRelease.Namespace, hooks.PostRollback, req.Timeout); err != nil {
+		if err := s.execHook(targetRelease.Hooks, targetRelease.Name, targetRelease.Namespace, hooks.PostRollback, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	}

@@ -37,11 +37,11 @@ import (
 
 // ReleaseModule is an interface that allows ReleaseServer to run operations on release via either local implementation or Rudder service
 type ReleaseModule interface {
-	Create(r *release.Release, req *services.InstallReleaseRequest, env *environment.Environment) error
-	Update(current, target *release.Release, req *services.UpdateReleaseRequest, env *environment.Environment) error
-	Rollback(current, target *release.Release, req *services.RollbackReleaseRequest, env *environment.Environment) error
-	Status(r *release.Release, req *services.GetReleaseStatusRequest, env *environment.Environment) (string, error)
-	Delete(r *release.Release, req *services.UninstallReleaseRequest, env *environment.Environment) (string, []error)
+	Create(r *release.Release, req *services.InstallReleaseRequest, client *kube.Client) error
+	Update(current, target *release.Release, req *services.UpdateReleaseRequest, client *kube.Client) error
+	Rollback(current, target *release.Release, req *services.RollbackReleaseRequest, client *kube.Client) error
+	Status(r *release.Release, req *services.GetReleaseStatusRequest, client *kube.Client) (string, error)
+	Delete(r *release.Release, req *services.UninstallReleaseRequest, client *kube.Client) (string, []error)
 }
 
 // LocalReleaseModule is a local implementation of ReleaseModule
@@ -49,52 +49,52 @@ type LocalReleaseModule struct {
 	clientset internalclientset.Interface
 }
 
-// Create creates a release via kubeclient from provided environment
-func (m *LocalReleaseModule) Create(r *release.Release, req *services.InstallReleaseRequest, env *environment.Environment) error {
+// Create creates a release via the provided kubeclient
+func (m *LocalReleaseModule) Create(r *release.Release, req *services.InstallReleaseRequest, client *kube.Client) error {
 	b := bytes.NewBufferString(r.Manifest)
-	return env.KubeClient.Create(r.Namespace, b, req.Timeout, req.Wait)
+	return client.Create(r.Namespace, b, req.Timeout, req.Wait)
 }
 
 // Update performs an update from current to target release
-func (m *LocalReleaseModule) Update(current, target *release.Release, req *services.UpdateReleaseRequest, env *environment.Environment) error {
+func (m *LocalReleaseModule) Update(current, target *release.Release, req *services.UpdateReleaseRequest, client *kube.Client) error {
 	c := bytes.NewBufferString(current.Manifest)
 	t := bytes.NewBufferString(target.Manifest)
-	return env.KubeClient.Update(target.Namespace, c, t, req.Force, req.Recreate, req.Timeout, req.Wait)
+	return client.Update(target.Namespace, c, t, req.Force, req.Recreate, req.Timeout, req.Wait)
 }
 
 // Rollback performs a rollback from current to target release
-func (m *LocalReleaseModule) Rollback(current, target *release.Release, req *services.RollbackReleaseRequest, env *environment.Environment) error {
+func (m *LocalReleaseModule) Rollback(current, target *release.Release, req *services.RollbackReleaseRequest, client *kube.Client) error {
 	c := bytes.NewBufferString(current.Manifest)
 	t := bytes.NewBufferString(target.Manifest)
-	return env.KubeClient.Update(target.Namespace, c, t, req.Force, req.Recreate, req.Timeout, req.Wait)
+	return client.Update(target.Namespace, c, t, req.Force, req.Recreate, req.Timeout, req.Wait)
 }
 
 // Status returns kubectl-like formatted status of release objects
-func (m *LocalReleaseModule) Status(r *release.Release, req *services.GetReleaseStatusRequest, env *environment.Environment) (string, error) {
-	return env.KubeClient.Get(r.Namespace, bytes.NewBufferString(r.Manifest))
+func (m *LocalReleaseModule) Status(r *release.Release, req *services.GetReleaseStatusRequest, client *kube.Client) (string, error) {
+	return client.Get(r.Namespace, bytes.NewBufferString(r.Manifest))
 }
 
 // Delete deletes the release and returns manifests that were kept in the deletion process
-func (m *LocalReleaseModule) Delete(rel *release.Release, req *services.UninstallReleaseRequest, env *environment.Environment) (kept string, errs []error) {
+func (m *LocalReleaseModule) Delete(rel *release.Release, req *services.UninstallReleaseRequest, client *kube.Client) (kept string, errs []error) {
 	vs, err := GetVersionSet(m.clientset.Discovery())
 	if err != nil {
 		return rel.Manifest, []error{fmt.Errorf("Could not get apiVersions from Kubernetes: %v", err)}
 	}
-	return DeleteRelease(rel, vs, env.KubeClient)
+	return DeleteRelease(rel, vs, client)
 }
 
 // RemoteReleaseModule is a ReleaseModule which calls Rudder service to operate on a release
 type RemoteReleaseModule struct{}
 
 // Create calls rudder.InstallRelease
-func (m *RemoteReleaseModule) Create(r *release.Release, req *services.InstallReleaseRequest, env *environment.Environment) error {
+func (m *RemoteReleaseModule) Create(r *release.Release, req *services.InstallReleaseRequest, client *kube.Client) error {
 	request := &rudderAPI.InstallReleaseRequest{Release: r}
 	_, err := rudder.InstallRelease(request)
 	return err
 }
 
 // Update calls rudder.UpgradeRelease
-func (m *RemoteReleaseModule) Update(current, target *release.Release, req *services.UpdateReleaseRequest, env *environment.Environment) error {
+func (m *RemoteReleaseModule) Update(current, target *release.Release, req *services.UpdateReleaseRequest, client *kube.Client) error {
 	upgrade := &rudderAPI.UpgradeReleaseRequest{
 		Current:  current,
 		Target:   target,
@@ -108,7 +108,7 @@ func (m *RemoteReleaseModule) Update(current, target *release.Release, req *serv
 }
 
 // Rollback calls rudder.Rollback
-func (m *RemoteReleaseModule) Rollback(current, target *release.Release, req *services.RollbackReleaseRequest, env *environment.Environment) error {
+func (m *RemoteReleaseModule) Rollback(current, target *release.Release, req *services.RollbackReleaseRequest, client *kube.Client) error {
 	rollback := &rudderAPI.RollbackReleaseRequest{
 		Current:  current,
 		Target:   target,
@@ -121,7 +121,7 @@ func (m *RemoteReleaseModule) Rollback(current, target *release.Release, req *se
 }
 
 // Status returns status retrieved from rudder.ReleaseStatus
-func (m *RemoteReleaseModule) Status(r *release.Release, req *services.GetReleaseStatusRequest, env *environment.Environment) (string, error) {
+func (m *RemoteReleaseModule) Status(r *release.Release, req *services.GetReleaseStatusRequest, client *kube.Client) (string, error) {
 	statusRequest := &rudderAPI.ReleaseStatusRequest{Release: r}
 	resp, err := rudder.ReleaseStatus(statusRequest)
 	if resp == nil {
@@ -131,7 +131,7 @@ func (m *RemoteReleaseModule) Status(r *release.Release, req *services.GetReleas
 }
 
 // Delete calls rudder.DeleteRelease
-func (m *RemoteReleaseModule) Delete(r *release.Release, req *services.UninstallReleaseRequest, env *environment.Environment) (string, []error) {
+func (m *RemoteReleaseModule) Delete(r *release.Release, req *services.UninstallReleaseRequest, client *kube.Client) (string, []error) {
 	deleteRequest := &rudderAPI.DeleteReleaseRequest{Release: r}
 	resp, err := rudder.DeleteRelease(deleteRequest)
 

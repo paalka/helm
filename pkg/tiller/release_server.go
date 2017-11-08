@@ -30,6 +30,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 
 	"github.com/paalka/helm/pkg/chartutil"
+	"github.com/paalka/helm/pkg/kube"
 	"github.com/paalka/helm/pkg/proto/hapi/chart"
 	"github.com/paalka/helm/pkg/proto/hapi/release"
 	"github.com/paalka/helm/pkg/proto/hapi/services"
@@ -316,8 +317,7 @@ func (s *ReleaseServer) recordRelease(r *release.Release, reuse bool) {
 	}
 }
 
-func (s *ReleaseServer) execHook(hs []*release.Hook, name, namespace, hook string, timeout int64) error {
-	kubeCli := s.env.KubeClient
+func (s *ReleaseServer) execHook(hs []*release.Hook, name, namespace, hook string, timeout int64, kubeCli *kube.Client) error {
 	code, ok := events[hook]
 	if !ok {
 		return fmt.Errorf("unknown hook %s", hook)

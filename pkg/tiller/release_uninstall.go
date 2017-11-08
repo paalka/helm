@@ -67,8 +67,12 @@ func (s *ReleaseServer) UninstallRelease(c ctx.Context, req *services.UninstallR
 	rel.Info.Description = "Deletion in progress (or silently failed)"
 	res := &services.UninstallReleaseResponse{Release: rel}
 
+	usrCli, err := getUserClient(c)
+	if err != nil {
+		return nil, err
+	}
 	if !req.DisableHooks {
-		if err := s.execHook(rel.Hooks, rel.Name, rel.Namespace, hooks.PreDelete, req.Timeout); err != nil {
+		if err := s.execHook(rel.Hooks, rel.Name, rel.Namespace, hooks.PreDelete, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	} else {
@@ -81,7 +85,7 @@ func (s *ReleaseServer) UninstallRelease(c ctx.Context, req *services.UninstallR
 		s.Log("uninstall: Failed to store updated release: %s", err)
 	}
 
-	kept, errs := s.ReleaseModule.Delete(rel, req, s.env)
+	kept, errs := s.ReleaseModule.Delete(rel, req, usrCli)
 	res.Info = kept
 
 	es := make([]string, 0, len(errs))
@@ -91,7 +95,7 @@ func (s *ReleaseServer) UninstallRelease(c ctx.Context, req *services.UninstallR
 	}
 
 	if !req.DisableHooks {
-		if err := s.execHook(rel.Hooks, rel.Name, rel.Namespace, hooks.PostDelete, req.Timeout); err != nil {
+		if err := s.execHook(rel.Hooks, rel.Name, rel.Namespace, hooks.PostDelete, req.Timeout, usrCli); err != nil {
 			es = append(es, err.Error())
 		}
 	}
