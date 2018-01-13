@@ -88,27 +88,30 @@ func (c *FakeClient) RollbackRelease(rlsName string, opts ...RollbackOption) (*r
 	return nil, nil
 }
 
-// ReleaseStatus returns a release status response with info from the first release in the fake
-// release client
+// ReleaseStatus returns a release status response with info from the matching release name.
 func (c *FakeClient) ReleaseStatus(rlsName string, opts ...StatusOption) (*rls.GetReleaseStatusResponse, error) {
-	if c.Rels[0] != nil {
-		return &rls.GetReleaseStatusResponse{
-			Name:      c.Rels[0].Name,
-			Info:      c.Rels[0].Info,
-			Namespace: c.Rels[0].Namespace,
-		}, nil
+	for _, rel := range c.Rels {
+		if rel.Name == rlsName {
+			return &rls.GetReleaseStatusResponse{
+				Name:      rel.Name,
+				Info:      rel.Info,
+				Namespace: rel.Namespace,
+			}, nil
+		}
 	}
 	return nil, fmt.Errorf("No such release: %s", rlsName)
 }
 
-// ReleaseContent returns the configuration for the first release in the fake release client
+// ReleaseContent returns the configuration for the matching release name in the fake release client.
 func (c *FakeClient) ReleaseContent(rlsName string, opts ...ContentOption) (resp *rls.GetReleaseContentResponse, err error) {
-	if len(c.Rels) > 0 {
-		resp = &rls.GetReleaseContentResponse{
-			Release: c.Rels[0],
+	for _, rel := range c.Rels {
+		if rel.Name == rlsName {
+			return &rls.GetReleaseContentResponse{
+				Release: rel,
+			}, nil
 		}
 	}
-	return resp, c.Err
+	return resp, fmt.Errorf("No such release: %s", rlsName)
 }
 
 // ReleaseHistory returns a release's revision history.
