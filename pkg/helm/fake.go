@@ -76,7 +76,7 @@ func (c *FakeClient) InstallReleaseFromChart(chart *chart.Chart, ns string, opts
 		return nil, errors.New("cannot re-use a name that is still in use")
 	}
 
-	release := ReleaseMock(&MockReleaseOptions{Name: releaseName, Namespace: ns})
+	release := ReleaseMock(&MockReleaseOptions{Name: releaseName, Namespace: ns, Config: c.Opts.instReq.Values.Raw, Chart: chart})
 	c.Rels = append(c.Rels, release)
 
 	return &rls.InstallReleaseResponse{
@@ -211,6 +211,7 @@ type MockReleaseOptions struct {
 	Chart      *chart.Chart
 	StatusCode release.Status_Code
 	Namespace  string
+	Config     string
 }
 
 // ReleaseMock creates a mock release object based on options set by MockReleaseOptions. This function should typically not be used outside of testing.
@@ -259,7 +260,7 @@ func ReleaseMock(opts *MockReleaseOptions) *release.Release {
 			Description:   "Release mock",
 		},
 		Chart:     ch,
-		Config:    &chart.Config{Raw: `name: "value"`},
+		Config:    &chart.Config{Raw: opts.Config},
 		Version:   version,
 		Namespace: namespace,
 		Hooks: []*release.Hook{
