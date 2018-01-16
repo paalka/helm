@@ -112,7 +112,6 @@ func main() {
 }
 
 func start() {
-
 	healthSrv := health.NewServer()
 	healthSrv.SetServingStatus("Tiller", healthpb.HealthCheckResponse_NOT_SERVING)
 

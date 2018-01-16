@@ -24,6 +24,7 @@ import (
 
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/hooks"
+	"k8s.io/helm/pkg/kube"
 	"k8s.io/helm/pkg/proto/hapi/release"
 	"k8s.io/helm/pkg/proto/hapi/services"
 	relutil "k8s.io/helm/pkg/releaseutil"
@@ -33,6 +34,7 @@ import (
 // InstallRelease installs a release and stores the release record.
 func (s *ReleaseServer) InstallRelease(c ctx.Context, req *services.InstallReleaseRequest) (*services.InstallReleaseResponse, error) {
 	s.Log("preparing install for %s", req.Name)
+
 	rel, err := s.prepareRelease(req)
 	if err != nil {
 		s.Log("failed install prepare step: %s", err)
@@ -47,8 +49,13 @@ func (s *ReleaseServer) InstallRelease(c ctx.Context, req *services.InstallRelea
 	}
 	rel.Info.Username = getUserName(c)
 
+	usrCli, err := getUserClient(c)
+	if err != nil {
+		return nil, err
+	}
+
 	s.Log("performing install for %s", req.Name)
-	res, err := s.performRelease(rel, req)
+	res, err := s.performRelease(rel, req, usrCli)
 	if err != nil {
 		s.Log("failed install perform step: %s", err)
 	}
@@ -133,7 +140,7 @@ func (s *ReleaseServer) prepareRelease(req *services.InstallReleaseRequest) (*re
 }
 
 // performRelease runs a release.
-func (s *ReleaseServer) performRelease(r *release.Release, req *services.InstallReleaseRequest) (*services.InstallReleaseResponse, error) {
+func (s *ReleaseServer) performRelease(r *release.Release, req *services.InstallReleaseRequest, usrCli *kube.Client) (*services.InstallReleaseResponse, error) {
 	res := &services.InstallReleaseResponse{Release: r}
 
 	if req.DryRun {
@@ -144,7 +151,7 @@ func (s *ReleaseServer) performRelease(r *release.Release, req *services.Install
 
 	// pre-install hooks
 	if !req.DisableHooks {
-		if err := s.execHook(r.Hooks, r.Name, r.Namespace, hooks.PreInstall, req.Timeout); err != nil {
+		if err := s.execHook(r.Hooks, r.Name, r.Namespace, hooks.PreInstall, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	} else {
@@ -174,7 +181,7 @@ func (s *ReleaseServer) performRelease(r *release.Release, req *services.Install
 			Timeout:  req.Timeout,
 		}
 		s.recordRelease(r, false)
-		if err := s.ReleaseModule.Update(old, r, updateReq, s.env); err != nil {
+		if err := s.ReleaseModule.Update(old, r, updateReq, usrCli); err != nil {
 			msg := fmt.Sprintf("Release replace %q failed: %s", r.Name, err)
 			s.Log("warning: %s", msg)
 			old.Info.Status.Code = release.Status_SUPERSEDED
@@ -189,7 +196,7 @@ func (s *ReleaseServer) performRelease(r *release.Release, req *services.Install
 		// nothing to replace, create as normal
 		// regular manifests
 		s.recordRelease(r, false)
-		if err := s.ReleaseModule.Create(r, req, s.env); err != nil {
+		if err := s.ReleaseModule.Create(r, req, usrCli); err != nil {
 			msg := fmt.Sprintf("Release %q failed: %s", r.Name, err)
 			s.Log("warning: %s", msg)
 			r.Info.Status.Code = release.Status_FAILED
@@ -201,7 +208,7 @@ func (s *ReleaseServer) performRelease(r *release.Release, req *services.Install
 
 	// post-install hooks
 	if !req.DisableHooks {
-		if err := s.execHook(r.Hooks, r.Name, r.Namespace, hooks.PostInstall, req.Timeout); err != nil {
+		if err := s.execHook(r.Hooks, r.Name, r.Namespace, hooks.PostInstall, req.Timeout, usrCli); err != nil {
 			msg := fmt.Sprintf("Release %q failed post-install: %s", r.Name, err)
 			s.Log("warning: %s", msg)
 			r.Info.Status.Code = release.Status_FAILED

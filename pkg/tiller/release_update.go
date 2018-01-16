@@ -24,6 +24,7 @@ import (
 
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/hooks"
+	"k8s.io/helm/pkg/kube"
 	"k8s.io/helm/pkg/proto/hapi/release"
 	"k8s.io/helm/pkg/proto/hapi/services"
 	"k8s.io/helm/pkg/timeconv"
@@ -35,12 +36,18 @@ func (s *ReleaseServer) UpdateRelease(c ctx.Context, req *services.UpdateRelease
 		s.Log("updateRelease: Release name is invalid: %s", req.Name)
 		return nil, err
 	}
+
+	usrCli, err := getUserClient(c)
+	if err != nil {
+		return nil, err
+	}
+
 	s.Log("preparing update for %s", req.Name)
 	currentRelease, updatedRelease, err := s.prepareUpdate(req)
 	if err != nil {
 		if req.Force {
 			// Use the --force, Luke.
-			return s.performUpdateForce(req)
+			return s.performUpdateForce(req, usrCli)
 		}
 		return nil, err
 	}
@@ -54,7 +61,7 @@ func (s *ReleaseServer) UpdateRelease(c ctx.Context, req *services.UpdateRelease
 	}
 
 	s.Log("performing update for %s", req.Name)
-	res, err := s.performUpdate(currentRelease, updatedRelease, req)
+	res, err := s.performUpdate(currentRelease, updatedRelease, req, usrCli)
 	if err != nil {
 		return res, err
 	}
@@ -144,7 +151,7 @@ func (s *ReleaseServer) prepareUpdate(req *services.UpdateReleaseRequest) (*rele
 }
 
 // performUpdateForce performs the same action as a `helm delete && helm install --replace`.
-func (s *ReleaseServer) performUpdateForce(req *services.UpdateReleaseRequest) (*services.UpdateReleaseResponse, error) {
+func (s *ReleaseServer) performUpdateForce(req *services.UpdateReleaseRequest, usrCli *kube.Client) (*services.UpdateReleaseResponse, error) {
 	// find the last release with the given name
 	oldRelease, err := s.env.Releases.Last(req.Name)
 	if err != nil {
@@ -182,7 +189,7 @@ func (s *ReleaseServer) performUpdateForce(req *services.UpdateReleaseRequest) (
 
 	// pre-delete hooks
 	if !req.DisableHooks {
-		if err := s.execHook(oldRelease.Hooks, oldRelease.Name, oldRelease.Namespace, hooks.PreDelete, req.Timeout); err != nil {
+		if err := s.execHook(oldRelease.Hooks, oldRelease.Name, oldRelease.Namespace, hooks.PreDelete, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	} else {
@@ -190,7 +197,7 @@ func (s *ReleaseServer) performUpdateForce(req *services.UpdateReleaseRequest) (
 	}
 
 	// delete manifests from the old release
-	_, errs := s.ReleaseModule.Delete(oldRelease, nil, s.env)
+	_, errs := s.ReleaseModule.Delete(oldRelease, nil, usrCli)
 
 	oldRelease.Info.Status.Code = release.Status_DELETED
 	oldRelease.Info.Description = "Deletion complete"
@@ -207,14 +214,14 @@ func (s *ReleaseServer) performUpdateForce(req *services.UpdateReleaseRequest) (
 
 	// post-delete hooks
 	if !req.DisableHooks {
-		if err := s.execHook(oldRelease.Hooks, oldRelease.Name, oldRelease.Namespace, hooks.PostDelete, req.Timeout); err != nil {
+		if err := s.execHook(oldRelease.Hooks, oldRelease.Name, oldRelease.Namespace, hooks.PostDelete, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	}
 
 	// pre-install hooks
 	if !req.DisableHooks {
-		if err := s.execHook(newRelease.Hooks, newRelease.Name, newRelease.Namespace, hooks.PreInstall, req.Timeout); err != nil {
+		if err := s.execHook(newRelease.Hooks, newRelease.Name, newRelease.Namespace, hooks.PreInstall, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	}
@@ -222,7 +229,7 @@ func (s *ReleaseServer) performUpdateForce(req *services.UpdateReleaseRequest) (
 	// update new release with next revision number so as to append to the old release's history
 	newRelease.Version = oldRelease.Version + 1
 	s.recordRelease(newRelease, false)
-	if err := s.ReleaseModule.Update(oldRelease, newRelease, req, s.env); err != nil {
+	if err := s.ReleaseModule.Update(oldRelease, newRelease, req, usrCli); err != nil {
 		msg := fmt.Sprintf("Upgrade %q failed: %s", newRelease.Name, err)
 		s.Log("warning: %s", msg)
 		newRelease.Info.Status.Code = release.Status_FAILED
@@ -233,7 +240,7 @@ func (s *ReleaseServer) performUpdateForce(req *services.UpdateReleaseRequest) (
 
 	// post-install hooks
 	if !req.DisableHooks {
-		if err := s.execHook(newRelease.Hooks, newRelease.Name, newRelease.Namespace, hooks.PostInstall, req.Timeout); err != nil {
+		if err := s.execHook(newRelease.Hooks, newRelease.Name, newRelease.Namespace, hooks.PostInstall, req.Timeout, usrCli); err != nil {
 			msg := fmt.Sprintf("Release %q failed post-install: %s", newRelease.Name, err)
 			s.Log("warning: %s", msg)
 			newRelease.Info.Status.Code = release.Status_FAILED
@@ -250,7 +257,7 @@ func (s *ReleaseServer) performUpdateForce(req *services.UpdateReleaseRequest) (
 	return res, nil
 }
 
-func (s *ReleaseServer) performUpdate(originalRelease, updatedRelease *release.Release, req *services.UpdateReleaseRequest) (*services.UpdateReleaseResponse, error) {
+func (s *ReleaseServer) performUpdate(originalRelease, updatedRelease *release.Release, req *services.UpdateReleaseRequest, usrCli *kube.Client) (*services.UpdateReleaseResponse, error) {
 	res := &services.UpdateReleaseResponse{Release: updatedRelease}
 
 	if req.DryRun {
@@ -261,13 +268,13 @@ func (s *ReleaseServer) performUpdate(originalRelease, updatedRelease *release.R
 
 	// pre-upgrade hooks
 	if !req.DisableHooks {
-		if err := s.execHook(updatedRelease.Hooks, updatedRelease.Name, updatedRelease.Namespace, hooks.PreUpgrade, req.Timeout); err != nil {
+		if err := s.execHook(updatedRelease.Hooks, updatedRelease.Name, updatedRelease.Namespace, hooks.PreUpgrade, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	} else {
 		s.Log("update hooks disabled for %s", req.Name)
 	}
-	if err := s.ReleaseModule.Update(originalRelease, updatedRelease, req, s.env); err != nil {
+	if err := s.ReleaseModule.Update(originalRelease, updatedRelease, req, usrCli); err != nil {
 		msg := fmt.Sprintf("Upgrade %q failed: %s", updatedRelease.Name, err)
 		s.Log("warning: %s", msg)
 		updatedRelease.Info.Status.Code = release.Status_FAILED
@@ -279,7 +286,7 @@ func (s *ReleaseServer) performUpdate(originalRelease, updatedRelease *release.R
 
 	// post-upgrade hooks
 	if !req.DisableHooks {
-		if err := s.execHook(updatedRelease.Hooks, updatedRelease.Name, updatedRelease.Namespace, hooks.PostUpgrade, req.Timeout); err != nil {
+		if err := s.execHook(updatedRelease.Hooks, updatedRelease.Name, updatedRelease.Namespace, hooks.PostUpgrade, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	}
