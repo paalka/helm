@@ -28,7 +28,7 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch"
 	apps "k8s.io/api/apps/v1beta2"
-	batch "k8s.io/api/batch/v1"
+	batchold "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -45,9 +45,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/clientcmd"
 	batchinternal "k8s.io/kubernetes/pkg/apis/batch"
-	batch "k8s.io/kubernetes/pkg/apis/batch/v1"
 	"k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authorization/internalversion"
 	conditions "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/kubectl"
@@ -537,7 +535,7 @@ func getSelectorFromObject(obj runtime.Object) (map[string]string, error) {
 		return typed.Spec.Selector.MatchLabels, nil
 	case *v1beta1.DaemonSet:
 		return typed.Spec.Selector.MatchLabels, nil
-	case *batch.Job:
+	case *batchold.Job:
 		return typed.Spec.Selector.MatchLabels, nil
 	case *apps.StatefulSet:
 		return typed.Spec.Selector.MatchLabels, nil

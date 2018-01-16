@@ -60,7 +60,7 @@ func NewServer(sysCli *kube.Client, opts ...grpc.ServerOption) *grpc.Server {
 }
 
 func authenticate(c context.Context, sysCli *kube.Client) (context.Context, error) {
-	md, ok := metadata.FromContext(c)
+	md, ok := metadata.FromIncomingContext(c)
 	if !ok {
 		return nil, errors.New("Missing metadata in context.")
 	}
@@ -191,7 +191,7 @@ func checkBearerAuth(c context.Context, h string, sysCli *kube.Client) (context.
 		Prefix:      syscfg.Prefix,
 		BearerToken: token,
 	}
-	usrcfg.TLSClientConfig.CertData = syscfg.TLSClientConfig.CertData
+	usrcfg.TLSClientConfig = syscfg.TLSClientConfig
 
 	c = context.WithValue(c, kube.UserInfo, &result.Status.User)
 	c = context.WithValue(c, kube.UserClient, kube.New(&wrapClientConfig{cfg: usrcfg}))
@@ -316,6 +316,14 @@ func (wrapClientConfig) Namespace() (string, bool, error) {
 
 func (wrapClientConfig) ConfigAccess() clientcmd.ConfigAccess {
 	return clientcmd.NewDefaultClientConfigLoadingRules()
+}
+
+func getUserClient(c context.Context) (*kube.Client, error) {
+	usrCli, ok := c.Value(kube.UserClient).(*kube.Client)
+	if !ok {
+		return nil, fmt.Errorf("Unable to obtain user client")
+	}
+	return usrCli, nil
 }
 
 func getUserName(c context.Context) string {

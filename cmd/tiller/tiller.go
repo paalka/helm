@@ -109,7 +109,7 @@ func main() {
 	start()
 }
 
-func start(c *cobra.Command, args []string) {
+func start() {
 	clientset, err := kube.New(nil).ClientSet()
 	if err != nil {
 		logger.Fatalf("Cannot initialize Kubernetes connection: %s", err)
@@ -160,7 +160,7 @@ func start(c *cobra.Command, args []string) {
 		}))
 	}
 
-	rootServer = tiller.NewServer(client, opts...)
+	rootServer = tiller.NewServer(kubeClient, opts...)
 
 	lstn, err := net.Listen("tcp", *grpcAddr)
 	if err != nil {

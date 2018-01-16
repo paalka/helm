@@ -259,7 +259,7 @@ func getInternalKubeClient(context string) (internalclientset.Interface, error) 
 }
 
 func loadAuthHeaders(ctx context.Context) context.Context {
-	c, err := kube.GetConfig(kubeContext).ClientConfig()
+	c, err := kube.GetConfig("", "").ClientConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to extract authentication headers: %s\n", err)
 		os.Exit(1)
@@ -285,14 +285,14 @@ func loadAuthHeaders(ctx context.Context) context.Context {
 		m[string(kube.Authorization)] = "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password))
 	}
 
-	md, _ := metadata.FromContext(ctx)
-	return metadata.NewContext(ctx, metadata.Join(md, metadata.New(m)))
+	md, _ := metadata.FromIncomingContext(ctx)
+	return metadata.NewOutgoingContext(ctx, metadata.Join(md, metadata.New(m)))
 }
 
 // getKubeCmd is a convenience method for creating kubernetes cmd client
 // for a given kubeconfig context
 func getKubeCmd(context string) *kube.Client {
-	return kube.New(kube.GetConfig(context))
+	return kube.New(kube.GetConfig(context, ""))
 }
 
 // ensureHelmClient returns a new helm client impl. if h is not nil.

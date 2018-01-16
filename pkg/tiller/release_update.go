@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/hooks"
+	"k8s.io/helm/pkg/kube"
 	"k8s.io/helm/pkg/proto/hapi/release"
 	"k8s.io/helm/pkg/proto/hapi/services"
 	"k8s.io/helm/pkg/timeconv"
@@ -48,8 +49,13 @@ func (s *ReleaseServer) UpdateRelease(c ctx.Context, req *services.UpdateRelease
 		}
 	}
 
+	usrCli, err := getUserClient(c)
+	if err != nil {
+		return nil, err
+	}
+
 	s.Log("performing update for %s", req.Name)
-	res, err := s.performUpdate(currentRelease, updatedRelease, req)
+	res, err := s.performUpdate(currentRelease, updatedRelease, req, usrCli)
 	if err != nil {
 		return res, err
 	}
@@ -138,7 +144,7 @@ func (s *ReleaseServer) prepareUpdate(req *services.UpdateReleaseRequest) (*rele
 	return currentRelease, updatedRelease, err
 }
 
-func (s *ReleaseServer) performUpdate(originalRelease, updatedRelease *release.Release, req *services.UpdateReleaseRequest) (*services.UpdateReleaseResponse, error) {
+func (s *ReleaseServer) performUpdate(originalRelease, updatedRelease *release.Release, req *services.UpdateReleaseRequest, usrCli *kube.Client) (*services.UpdateReleaseResponse, error) {
 	res := &services.UpdateReleaseResponse{Release: updatedRelease}
 
 	if req.DryRun {
@@ -149,13 +155,13 @@ func (s *ReleaseServer) performUpdate(originalRelease, updatedRelease *release.R
 
 	// pre-upgrade hooks
 	if !req.DisableHooks {
-		if err := s.execHook(updatedRelease.Hooks, updatedRelease.Name, updatedRelease.Namespace, hooks.PreUpgrade, req.Timeout); err != nil {
+		if err := s.execHook(updatedRelease.Hooks, updatedRelease.Name, updatedRelease.Namespace, hooks.PreUpgrade, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	} else {
 		s.Log("update hooks disabled for %s", req.Name)
 	}
-	if err := s.ReleaseModule.Update(originalRelease, updatedRelease, req, s.env); err != nil {
+	if err := s.ReleaseModule.Update(originalRelease, updatedRelease, req, usrCli); err != nil {
 		msg := fmt.Sprintf("Upgrade %q failed: %s", updatedRelease.Name, err)
 		s.Log("warning: %s", msg)
 		updatedRelease.Info.Status.Code = release.Status_FAILED
@@ -167,7 +173,7 @@ func (s *ReleaseServer) performUpdate(originalRelease, updatedRelease *release.R
 
 	// post-upgrade hooks
 	if !req.DisableHooks {
-		if err := s.execHook(updatedRelease.Hooks, updatedRelease.Name, updatedRelease.Namespace, hooks.PostUpgrade, req.Timeout); err != nil {
+		if err := s.execHook(updatedRelease.Hooks, updatedRelease.Name, updatedRelease.Namespace, hooks.PostUpgrade, req.Timeout, usrCli); err != nil {
 			return res, err
 		}
 	}
