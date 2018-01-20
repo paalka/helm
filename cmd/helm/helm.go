@@ -284,8 +284,7 @@ func loadAuthHeaders(ctx context.Context) context.Context {
 	if len(c.Username) != 0 && len(c.Password) != 0 {
 		m[string(kube.Authorization)] = "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password))
 	}
-
-	md, _ := metadata.FromIncomingContext(ctx)
+	md, _ := metadata.FromOutgoingContext(ctx)
 	return metadata.NewOutgoingContext(ctx, metadata.Join(md, metadata.New(m)))
 }
 
