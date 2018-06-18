@@ -1,0 +1,1121 @@
+From 586a496fca64f6aeac84e0a64a52900c74e0d705 Mon Sep 17 00:00:00 2001
+From: tamal <tamal@appscode.com>
+Date: Fri, 7 Apr 2017 11:38:07 -0700
+Subject: [PATCH] Pass user authentication to Tiller
+
+---
+ _proto/hapi/release/info.proto         |   3 +
+ cmd/helm/get.go                        |   2 +-
+ cmd/helm/get_manifest.go               |   2 +-
+ cmd/helm/get_test.go                   |   3 +-
+ cmd/helm/helm.go                       |  42 +++++-
+ cmd/helm/helm_test.go                  |   3 +
+ cmd/helm/history.go                    |  17 +--
+ cmd/helm/history_test.go               |   5 +-
+ cmd/helm/list.go                       |   7 +-
+ cmd/helm/list_test.go                  |   3 +-
+ cmd/helm/printer.go                    |   2 +
+ cmd/helm/status.go                     |   4 +-
+ cmd/helm/status_test.go                |  14 +-
+ cmd/tiller/tiller.go                   |   5 +-
+ pkg/helm/client.go                     |  35 +++--
+ pkg/helm/option.go                     |  11 +-
+ pkg/kube/auth_header.go                |  28 ++++
+ pkg/kube/client.go                     |  20 +++
+ pkg/proto/hapi/release/info.pb.go      |  42 +++---
+ pkg/releasetesting/environment_test.go |   4 +-
+ pkg/releasetesting/test_suite_test.go  |   1 -
+ pkg/tiller/release_install.go          |   1 +
+ pkg/tiller/release_rollback.go         |   1 +
+ pkg/tiller/release_uninstall.go        |   1 +
+ pkg/tiller/release_update.go           |   1 +
+ pkg/tiller/server.go                   | 256 +++++++++++++++++++++++++++++++--
+ 26 files changed, 447 insertions(+), 66 deletions(-)
+ create mode 100644 pkg/kube/auth_header.go
+
+diff --git a/_proto/hapi/release/info.proto b/_proto/hapi/release/info.proto
+index e23175d3d..39c424b7f 100644
+--- a/_proto/hapi/release/info.proto
++++ b/_proto/hapi/release/info.proto
+@@ -34,4 +34,7 @@ message Info {
+ 
+ 	// Description is human-friendly "log entry" about this release.
+ 	string Description = 5;
++
++	// Username is the authenticated user who performed this release.
++	string Username = 6;
+ }
+diff --git a/cmd/helm/get.go b/cmd/helm/get.go
+index fc5871f46..20221b4f3 100644
+--- a/cmd/helm/get.go
++++ b/cmd/helm/get.go
+@@ -64,7 +64,7 @@ func newGetCmd(client helm.Interface, out io.Writer) *cobra.Command {
+ 			}
+ 			get.release = args[0]
+ 			if get.client == nil {
+-				get.client = helm.NewClient(helm.Host(settings.TillerHost))
++				get.client = helm.NewClient(helm.Host(settings.TillerHost), helm.WithContext(loadAuthHeaders))
+ 			}
+ 			return get.run()
+ 		},
+diff --git a/cmd/helm/get_manifest.go b/cmd/helm/get_manifest.go
+index 190c03f48..6974765e5 100644
+--- a/cmd/helm/get_manifest.go
++++ b/cmd/helm/get_manifest.go
+@@ -55,7 +55,7 @@ func newGetManifestCmd(client helm.Interface, out io.Writer) *cobra.Command {
+ 			}
+ 			get.release = args[0]
+ 			if get.client == nil {
+-				get.client = helm.NewClient(helm.Host(settings.TillerHost))
++				get.client = helm.NewClient(helm.Host(settings.TillerHost), helm.WithContext(loadAuthHeaders))
+ 			}
+ 			return get.run()
+ 		},
+diff --git a/cmd/helm/get_test.go b/cmd/helm/get_test.go
+index 77d8d4d19..ff213508a 100644
+--- a/cmd/helm/get_test.go
++++ b/cmd/helm/get_test.go
+@@ -17,6 +17,7 @@ limitations under the License.
+ package main
+ 
+ import (
++	"fmt"
+ 	"io"
+ 	"testing"
+ 
+@@ -29,7 +30,7 @@ func TestGetCmd(t *testing.T) {
+ 			name:     "get with a release",
+ 			resp:     releaseMock(&releaseOptions{name: "thomas-guide"}),
+ 			args:     []string{"thomas-guide"},
+-			expected: "REVISION: 1\nRELEASED: (.*)\nCHART: foo-0.1.0-beta.1\nUSER-SUPPLIED VALUES:\nname: \"value\"\nCOMPUTED VALUES:\nname: value\n\nHOOKS:\n---\n# pre-install-hook\n" + mockHookTemplate + "\nMANIFEST:",
++			expected: fmt.Sprintf("REVISION: 1\nRELEASED: (.*)\nRELEASED BY: %s\nCHART: foo-0.1.0-beta.1\nUSER-SUPPLIED VALUES:\nname: \"value\"\nCOMPUTED VALUES:\nname: value\n\nHOOKS:\n---\n# pre-install-hook\n"+mockHookTemplate+"\nMANIFEST:", username),
+ 		},
+ 		{
+ 			name: "get requires release name arg",
+diff --git a/cmd/helm/helm.go b/cmd/helm/helm.go
+index 7e08921ba..837985e25 100644
+--- a/cmd/helm/helm.go
++++ b/cmd/helm/helm.go
+@@ -17,6 +17,7 @@ limitations under the License.
+ package main // import "k8s.io/helm/cmd/helm"
+ 
+ import (
++	"encoding/base64"
+ 	"errors"
+ 	"fmt"
+ 	"io/ioutil"
+@@ -25,8 +26,10 @@ import (
+ 	"strings"
+ 
+ 	"github.com/spf13/cobra"
++	"golang.org/x/net/context"
+ 	"google.golang.org/grpc"
+ 	"google.golang.org/grpc/grpclog"
++	"google.golang.org/grpc/metadata"
+ 	"k8s.io/client-go/kubernetes"
+ 	"k8s.io/client-go/rest"
+ 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+@@ -279,6 +282,43 @@ func getInternalKubeClient(context string) (*rest.Config, internalclientset.Inte
+ 	return config, client, nil
+ }
+ 
++func loadAuthHeaders(ctx context.Context) context.Context {
++	c, err := kube.GetConfig(kubeContext).ClientConfig()
++	if err != nil {
++		fmt.Fprintf(os.Stderr, "Failed to extract authentication headers: %s\n", err)
++		os.Exit(1)
++	}
++	m := map[string]string{}
++
++	if c.AuthProvider != nil {
++		switch c.AuthProvider.Name {
++		case "gcp":
++			m[string(kube.Authorization)] = "Bearer " + c.AuthProvider.Config["access-token"]
++		case "oidc":
++			m[string(kube.Authorization)] = "Bearer " + c.AuthProvider.Config["id-token"]
++		default:
++			fmt.Fprintf(os.Stderr, "Unknown auth provider: %s\n", c.AuthProvider.Name)
++			os.Exit(1)
++		}
++	}
++
++	if len(c.BearerToken) != 0 {
++		m[string(kube.Authorization)] = "Bearer " + c.BearerToken
++	}
++	if len(c.Username) != 0 && len(c.Password) != 0 {
++		m[string(kube.Authorization)] = "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password))
++	}
++
++	md, _ := metadata.FromContext(ctx)
++	return metadata.NewContext(ctx, metadata.Join(md, metadata.New(m)))
++}
++
++// getKubeCmd is a convenience method for creating kubernetes cmd client
++// for a given kubeconfig context
++func getKubeCmd(context string) *kube.Client {
++	return kube.New(kube.GetConfig(context))
++}
++
+ // ensureHelmClient returns a new helm client impl. if h is not nil.
+ func ensureHelmClient(h helm.Interface) helm.Interface {
+ 	if h != nil {
+@@ -288,7 +328,7 @@ func ensureHelmClient(h helm.Interface) helm.Interface {
+ }
+ 
+ func newClient() helm.Interface {
+-	options := []helm.Option{helm.Host(settings.TillerHost)}
++	options := []helm.Option{helm.Host(settings.TillerHost), helm.WithContext(loadAuthHeaders)}
+ 
+ 	if tlsVerify || tlsEnable {
+ 		tlsopts := tlsutil.Options{KeyFile: tlsKeyFile, CertFile: tlsCertFile, InsecureSkipVerify: true}
+diff --git a/cmd/helm/helm_test.go b/cmd/helm/helm_test.go
+index d3078dae0..c493a3c6b 100644
+--- a/cmd/helm/helm_test.go
++++ b/cmd/helm/helm_test.go
+@@ -61,6 +61,8 @@ type releaseOptions struct {
+ 	namespace  string
+ }
+ 
++var username = "John"
++
+ func releaseMock(opts *releaseOptions) *release.Release {
+ 	date := timestamp.Timestamp{Seconds: 242085845, Nanos: 0}
+ 
+@@ -104,6 +106,7 @@ func releaseMock(opts *releaseOptions) *release.Release {
+ 			LastDeployed:  &date,
+ 			Status:        &release.Status{Code: scode},
+ 			Description:   "Release mock",
++			Username:      username,
+ 		},
+ 		Chart:     ch,
+ 		Config:    &chart.Config{Raw: `name: "value"`},
+diff --git a/cmd/helm/history.go b/cmd/helm/history.go
+index 08f1656f5..07d1a80d9 100644
+--- a/cmd/helm/history.go
++++ b/cmd/helm/history.go
+@@ -38,11 +38,11 @@ configures the maximum length of the revision list returned.
+ The historical release set is printed as a formatted table, e.g:
+ 
+     $ helm history angry-bird --max=4
+-    REVISION   UPDATED                      STATUS           CHART        DESCRIPTION
+-    1           Mon Oct 3 10:15:13 2016     SUPERSEDED      alpine-0.1.0  Initial install
+-    2           Mon Oct 3 10:15:13 2016     SUPERSEDED      alpine-0.1.0  Upgraded successfully
+-    3           Mon Oct 3 10:15:13 2016     SUPERSEDED      alpine-0.1.0  Rolled back to 2
+-    4           Mon Oct 3 10:15:13 2016     DEPLOYED        alpine-0.1.0  Upgraded successfully
++    REVISION   UPDATED                      STATUS           CHART        DESCRIPTION               RELEASED BY
++    1           Mon Oct 3 10:15:13 2016     SUPERSEDED      alpine-0.1.0  Initial install            x
++    2           Mon Oct 3 10:15:13 2016     SUPERSEDED      alpine-0.1.0  Upgraded successfully      y
++    3           Mon Oct 3 10:15:13 2016     SUPERSEDED      alpine-0.1.0  Rolled back to 2           z
++    4           Mon Oct 3 10:15:13 2016     DEPLOYED        alpine-0.1.0  Upgraded successfully      x
+ `
+ 
+ type historyCmd struct {
+@@ -66,7 +66,7 @@ func newHistoryCmd(c helm.Interface, w io.Writer) *cobra.Command {
+ 			case len(args) == 0:
+ 				return errReleaseRequired
+ 			case his.helmc == nil:
+-				his.helmc = helm.NewClient(helm.Host(settings.TillerHost))
++				his.helmc = helm.NewClient(helm.Host(settings.TillerHost), helm.WithContext(loadAuthHeaders))
+ 			}
+ 			his.rls = args[0]
+ 			return his.run()
+@@ -94,7 +94,7 @@ func (cmd *historyCmd) run() error {
+ func formatHistory(rls []*release.Release) string {
+ 	tbl := uitable.New()
+ 	tbl.MaxColWidth = 60
+-	tbl.AddRow("REVISION", "UPDATED", "STATUS", "CHART", "DESCRIPTION")
++	tbl.AddRow("REVISION", "UPDATED", "STATUS", "CHART", "DESCRIPTION", "RELEASED BY")
+ 	for i := len(rls) - 1; i >= 0; i-- {
+ 		r := rls[i]
+ 		c := formatChartname(r.Chart)
+@@ -102,7 +102,8 @@ func formatHistory(rls []*release.Release) string {
+ 		s := r.Info.Status.Code.String()
+ 		v := r.Version
+ 		d := r.Info.Description
+-		tbl.AddRow(v, t, s, c, d)
++		u := r.Info.Username
++		tbl.AddRow(v, t, s, c, d, u)
+ 	}
+ 	return tbl.String()
+ }
+diff --git a/cmd/helm/history_test.go b/cmd/helm/history_test.go
+index 5f57e1748..a99f8c885 100644
+--- a/cmd/helm/history_test.go
++++ b/cmd/helm/history_test.go
+@@ -18,6 +18,7 @@ package main
+ 
+ import (
+ 	"bytes"
++	"fmt"
+ 	"regexp"
+ 	"testing"
+ 
+@@ -50,7 +51,7 @@ func TestHistoryCmd(t *testing.T) {
+ 				mk("angry-bird", 2, rpb.Status_SUPERSEDED),
+ 				mk("angry-bird", 1, rpb.Status_SUPERSEDED),
+ 			},
+-			xout: "REVISION\tUPDATED                 \tSTATUS    \tCHART           \tDESCRIPTION \n1       \t(.*)\tSUPERSEDED\tfoo-0.1.0-beta.1\tRelease mock\n2       \t(.*)\tSUPERSEDED\tfoo-0.1.0-beta.1\tRelease mock\n3       \t(.*)\tSUPERSEDED\tfoo-0.1.0-beta.1\tRelease mock\n4       \t(.*)\tDEPLOYED  \tfoo-0.1.0-beta.1\tRelease mock\n",
++			xout: fmt.Sprintf("REVISION\tUPDATED                 \tSTATUS    \tCHART           \tDESCRIPTION \tRELEASED BY\n1       \t(.*)\tSUPERSEDED\tfoo-0.1.0-beta.1\tRelease mock\t%s       \n2       \t(.*)\tSUPERSEDED\tfoo-0.1.0-beta.1\tRelease mock\t%s       \n3       \t(.*)\tSUPERSEDED\tfoo-0.1.0-beta.1\tRelease mock\t%s       \n4       \t(.*)\tDEPLOYED  \tfoo-0.1.0-beta.1\tRelease mock\t%s       \n", username, username, username, username),
+ 		},
+ 		{
+ 			cmds: "helm history --max=MAX RELEASE_NAME",
+@@ -60,7 +61,7 @@ func TestHistoryCmd(t *testing.T) {
+ 				mk("angry-bird", 4, rpb.Status_DEPLOYED),
+ 				mk("angry-bird", 3, rpb.Status_SUPERSEDED),
+ 			},
+-			xout: "REVISION\tUPDATED                 \tSTATUS    \tCHART           \tDESCRIPTION \n3       \t(.*)\tSUPERSEDED\tfoo-0.1.0-beta.1\tRelease mock\n4       \t(.*)\tDEPLOYED  \tfoo-0.1.0-beta.1\tRelease mock\n",
++			xout: fmt.Sprintf("REVISION\tUPDATED                 \tSTATUS    \tCHART           \tDESCRIPTION \tRELEASED BY\n3       \t(.*)\tSUPERSEDED\tfoo-0.1.0-beta.1\tRelease mock\t%s       \n4       \t(.*)\tDEPLOYED  \tfoo-0.1.0-beta.1\tRelease mock\t%s       \n", username, username),
+ 		},
+ 	}
+ 
+diff --git a/cmd/helm/list.go b/cmd/helm/list.go
+index 391e83e20..e391100e3 100644
+--- a/cmd/helm/list.go
++++ b/cmd/helm/list.go
+@@ -92,7 +92,7 @@ func newListCmd(client helm.Interface, out io.Writer) *cobra.Command {
+ 				list.filter = strings.Join(args, " ")
+ 			}
+ 			if list.client == nil {
+-				list.client = helm.NewClient(helm.Host(settings.TillerHost))
++				list.client = helm.NewClient(helm.Host(settings.TillerHost), helm.WithContext(loadAuthHeaders))
+ 			}
+ 			return list.run()
+ 		},
+@@ -202,14 +202,15 @@ func (l *listCmd) statusCodes() []release.Status_Code {
+ func formatList(rels []*release.Release) string {
+ 	table := uitable.New()
+ 	table.MaxColWidth = 60
+-	table.AddRow("NAME", "REVISION", "UPDATED", "STATUS", "CHART", "NAMESPACE")
++	table.AddRow("NAME", "REVISION", "UPDATED", "STATUS", "CHART", "NAMESPACE", "RELEASED BY")
+ 	for _, r := range rels {
+ 		c := fmt.Sprintf("%s-%s", r.Chart.Metadata.Name, r.Chart.Metadata.Version)
+ 		t := timeconv.String(r.Info.LastDeployed)
+ 		s := r.Info.Status.Code.String()
+ 		v := r.Version
+ 		n := r.Namespace
+-		table.AddRow(r.Name, v, t, s, c, n)
++		u := r.Info.Username
++		table.AddRow(r.Name, v, t, s, c, n, u)
+ 	}
+ 	return table.String()
+ }
+diff --git a/cmd/helm/list_test.go b/cmd/helm/list_test.go
+index 611f47973..8982e633a 100644
+--- a/cmd/helm/list_test.go
++++ b/cmd/helm/list_test.go
+@@ -18,6 +18,7 @@ package main
+ 
+ import (
+ 	"bytes"
++	"fmt"
+ 	"regexp"
+ 	"testing"
+ 
+@@ -45,7 +46,7 @@ func TestListCmd(t *testing.T) {
+ 			resp: []*release.Release{
+ 				releaseMock(&releaseOptions{name: "atlas"}),
+ 			},
+-			expected: "NAME \tREVISION\tUPDATED                 \tSTATUS  \tCHART           \tNAMESPACE\natlas\t1       \t(.*)\tDEPLOYED\tfoo-0.1.0-beta.1\tdefault  \n",
++			expected: fmt.Sprintf("NAME \tREVISION\tUPDATED                 \tSTATUS  \tCHART           \tNAMESPACE\tRELEASED BY\natlas\t1       \t(.*)\tDEPLOYED\tfoo-0.1.0-beta.1\tdefault  \t%s       \n", username),
+ 		},
+ 		{
+ 			name: "list, one deployed, one failed",
+diff --git a/cmd/helm/printer.go b/cmd/helm/printer.go
+index ebb24bf7d..ce8a43d0f 100644
+--- a/cmd/helm/printer.go
++++ b/cmd/helm/printer.go
+@@ -29,6 +29,7 @@ import (
+ 
+ var printReleaseTemplate = `REVISION: {{.Release.Version}}
+ RELEASED: {{.ReleaseDate}}
++RELEASED BY: {{.ReleasedBy}}
+ CHART: {{.Release.Chart.Metadata.Name}}-{{.Release.Chart.Metadata.Version}}
+ USER-SUPPLIED VALUES:
+ {{.Release.Config.Raw}}
+@@ -62,6 +63,7 @@ func printRelease(out io.Writer, rel *release.Release) error {
+ 		"Release":        rel,
+ 		"ComputedValues": cfgStr,
+ 		"ReleaseDate":    timeconv.Format(rel.Info.LastDeployed, time.ANSIC),
++		"ReleasedBy":     rel.Info.Username,
+ 	}
+ 	return tpl(printReleaseTemplate, data, out)
+ }
+diff --git a/cmd/helm/status.go b/cmd/helm/status.go
+index 36269c4b1..cbea139e9 100644
+--- a/cmd/helm/status.go
++++ b/cmd/helm/status.go
+@@ -38,6 +38,7 @@ The status consists of:
+ - last deployment time
+ - k8s namespace in which the release lives
+ - state of the release (can be: UNKNOWN, DEPLOYED, DELETED, SUPERSEDED, FAILED or DELETING)
++- name of the user who deployed the release
+ - list of resources that this release consists of, sorted by kind
+ - details on last test suite run, if applicable
+ - additional notes provided by the chart
+@@ -67,7 +68,7 @@ func newStatusCmd(client helm.Interface, out io.Writer) *cobra.Command {
+ 			}
+ 			status.release = args[0]
+ 			if status.client == nil {
+-				status.client = helm.NewClient(helm.Host(settings.TillerHost))
++				status.client = helm.NewClient(helm.Host(settings.TillerHost), helm.WithContext(loadAuthHeaders))
+ 			}
+ 			return status.run()
+ 		},
+@@ -96,6 +97,7 @@ func PrintStatus(out io.Writer, res *services.GetReleaseStatusResponse) {
+ 	}
+ 	fmt.Fprintf(out, "NAMESPACE: %s\n", res.Namespace)
+ 	fmt.Fprintf(out, "STATUS: %s\n", res.Info.Status.Code)
++	fmt.Fprintf(out, "RELEASED BY: %s\n", res.Info.Username)
+ 	fmt.Fprintf(out, "\n")
+ 	if len(res.Info.Status.Resources) > 0 {
+ 		re := regexp.MustCompile("  +")
+diff --git a/cmd/helm/status_test.go b/cmd/helm/status_test.go
+index 40729154c..42104a61e 100644
+--- a/cmd/helm/status_test.go
++++ b/cmd/helm/status_test.go
+@@ -50,7 +50,7 @@ func TestStatusCmd(t *testing.T) {
+ 		{
+ 			name:     "get status of a deployed release",
+ 			args:     []string{"flummoxed-chickadee"},
+-			expected: outputWithStatus("DEPLOYED\n\n"),
++			expected: outputWithStatus("DEPLOYED", username+"\n\n"),
+ 			rel: releaseMockWithStatus(&release.Status{
+ 				Code: release.Status_DEPLOYED,
+ 			}),
+@@ -58,7 +58,7 @@ func TestStatusCmd(t *testing.T) {
+ 		{
+ 			name:     "get status of a deployed release with notes",
+ 			args:     []string{"flummoxed-chickadee"},
+-			expected: outputWithStatus("DEPLOYED\n\nNOTES:\nrelease notes\n"),
++			expected: outputWithStatus("DEPLOYED", username+"\n\nNOTES:\nrelease notes\n"),
+ 			rel: releaseMockWithStatus(&release.Status{
+ 				Code:  release.Status_DEPLOYED,
+ 				Notes: "release notes",
+@@ -67,7 +67,7 @@ func TestStatusCmd(t *testing.T) {
+ 		{
+ 			name:     "get status of a deployed release with resources",
+ 			args:     []string{"flummoxed-chickadee"},
+-			expected: outputWithStatus("DEPLOYED\n\nRESOURCES:\nresource A\nresource B\n\n"),
++			expected: outputWithStatus("DEPLOYED", username+"\n\nRESOURCES:\nresource A\nresource B\n\n"),
+ 			rel: releaseMockWithStatus(&release.Status{
+ 				Code:      release.Status_DEPLOYED,
+ 				Resources: "resource A\nresource B\n",
+@@ -131,10 +131,11 @@ func TestStatusCmd(t *testing.T) {
+ 	}
+ }
+ 
+-func outputWithStatus(status string) string {
+-	return fmt.Sprintf("LAST DEPLOYED: %s\nNAMESPACE: \nSTATUS: %s",
++func outputWithStatus(status string, username string) string {
++	return fmt.Sprintf("LAST DEPLOYED: %s\nNAMESPACE: \nSTATUS: %s\nRELEASED BY: %s",
+ 		dateString,
+-		status)
++		status,
++		username)
+ }
+ 
+ func releaseMockWithStatus(status *release.Status) *release.Release {
+@@ -144,6 +145,7 @@ func releaseMockWithStatus(status *release.Status) *release.Release {
+ 			FirstDeployed: &date,
+ 			LastDeployed:  &date,
+ 			Status:        status,
++			Username:      username,
+ 		},
+ 	}
+ }
+diff --git a/cmd/tiller/tiller.go b/cmd/tiller/tiller.go
+index 6abd35ec9..237dd0cdf 100644
+--- a/cmd/tiller/tiller.go
++++ b/cmd/tiller/tiller.go
+@@ -141,7 +141,8 @@ func newLogger(prefix string) *log.Logger {
+ }
+ 
+ func start(c *cobra.Command, args []string) {
+-	clientset, err := kube.New(nil).ClientSet()
++	client := kube.New(nil)
++	clientset, err := client.ClientSet()
+ 	if err != nil {
+ 		logger.Fatalf("Cannot initialize Kubernetes connection: %s", err)
+ 	}
+@@ -177,7 +178,7 @@ func start(c *cobra.Command, args []string) {
+ 		opts = append(opts, grpc.Creds(credentials.NewTLS(cfg)))
+ 	}
+ 
+-	rootServer = tiller.NewServer(opts...)
++	rootServer = tiller.NewServer(client, opts...)
+ 
+ 	lstn, err := net.Listen("tcp", grpcAddr)
+ 	if err != nil {
+diff --git a/pkg/helm/client.go b/pkg/helm/client.go
+index 7e41b89bc..2d083e6a9 100644
+--- a/pkg/helm/client.go
++++ b/pkg/helm/client.go
+@@ -56,6 +56,9 @@ func (h *Client) ListReleases(opts ...ReleaseListOption) (*rls.ListReleasesRespo
+ 	req := &h.opts.listReq
+ 	ctx := NewContext()
+ 
++	if h.opts.withContext != nil {
++		ctx = h.opts.withContext(ctx)
++	}
+ 	if h.opts.before != nil {
+ 		if err := h.opts.before(ctx, req); err != nil {
+ 			return nil, err
+@@ -88,7 +91,9 @@ func (h *Client) InstallReleaseFromChart(chart *chart.Chart, ns string, opts ...
+ 	req.DisableHooks = h.opts.disableHooks
+ 	req.ReuseName = h.opts.reuseName
+ 	ctx := NewContext()
+-
++	if h.opts.withContext != nil {
++		ctx = h.opts.withContext(ctx)
++	}
+ 	if h.opts.before != nil {
+ 		if err := h.opts.before(ctx, req); err != nil {
+ 			return nil, err
+@@ -126,7 +131,9 @@ func (h *Client) DeleteRelease(rlsName string, opts ...DeleteOption) (*rls.Unins
+ 	req.Name = rlsName
+ 	req.DisableHooks = h.opts.disableHooks
+ 	ctx := NewContext()
+-
++	if h.opts.withContext != nil {
++		ctx = h.opts.withContext(ctx)
++	}
+ 	if h.opts.before != nil {
+ 		if err := h.opts.before(ctx, req); err != nil {
+ 			return nil, err
+@@ -163,7 +170,9 @@ func (h *Client) UpdateReleaseFromChart(rlsName string, chart *chart.Chart, opts
+ 	req.ResetValues = h.opts.resetValues
+ 	req.ReuseValues = h.opts.reuseValues
+ 	ctx := NewContext()
+-
++	if h.opts.withContext != nil {
++		ctx = h.opts.withContext(ctx)
++	}
+ 	if h.opts.before != nil {
+ 		if err := h.opts.before(ctx, req); err != nil {
+ 			return nil, err
+@@ -188,7 +197,9 @@ func (h *Client) GetVersion(opts ...VersionOption) (*rls.GetVersionResponse, err
+ 	}
+ 	req := &rls.GetVersionRequest{}
+ 	ctx := NewContext()
+-
++	if h.opts.withContext != nil {
++		ctx = h.opts.withContext(ctx)
++	}
+ 	if h.opts.before != nil {
+ 		if err := h.opts.before(ctx, req); err != nil {
+ 			return nil, err
+@@ -209,7 +220,9 @@ func (h *Client) RollbackRelease(rlsName string, opts ...RollbackOption) (*rls.R
+ 	req.DryRun = h.opts.dryRun
+ 	req.Name = rlsName
+ 	ctx := NewContext()
+-
++	if h.opts.withContext != nil {
++		ctx = h.opts.withContext(ctx)
++	}
+ 	if h.opts.before != nil {
+ 		if err := h.opts.before(ctx, req); err != nil {
+ 			return nil, err
+@@ -226,7 +239,9 @@ func (h *Client) ReleaseStatus(rlsName string, opts ...StatusOption) (*rls.GetRe
+ 	req := &h.opts.statusReq
+ 	req.Name = rlsName
+ 	ctx := NewContext()
+-
++	if h.opts.withContext != nil {
++		ctx = h.opts.withContext(ctx)
++	}
+ 	if h.opts.before != nil {
+ 		if err := h.opts.before(ctx, req); err != nil {
+ 			return nil, err
+@@ -243,7 +258,9 @@ func (h *Client) ReleaseContent(rlsName string, opts ...ContentOption) (*rls.Get
+ 	req := &h.opts.contentReq
+ 	req.Name = rlsName
+ 	ctx := NewContext()
+-
++	if h.opts.withContext != nil {
++		ctx = h.opts.withContext(ctx)
++	}
+ 	if h.opts.before != nil {
+ 		if err := h.opts.before(ctx, req); err != nil {
+ 			return nil, err
+@@ -261,7 +278,9 @@ func (h *Client) ReleaseHistory(rlsName string, opts ...HistoryOption) (*rls.Get
+ 	req := &h.opts.histReq
+ 	req.Name = rlsName
+ 	ctx := NewContext()
+-
++	if h.opts.withContext != nil {
++		ctx = h.opts.withContext(ctx)
++	}
+ 	if h.opts.before != nil {
+ 		if err := h.opts.before(ctx, req); err != nil {
+ 			return nil, err
+diff --git a/pkg/helm/option.go b/pkg/helm/option.go
+index 2b30cd3c5..32a57255e 100644
+--- a/pkg/helm/option.go
++++ b/pkg/helm/option.go
+@@ -22,7 +22,6 @@ import (
+ 	"github.com/golang/protobuf/proto"
+ 	"golang.org/x/net/context"
+ 	"google.golang.org/grpc/metadata"
+-
+ 	cpb "k8s.io/helm/pkg/proto/hapi/chart"
+ 	"k8s.io/helm/pkg/proto/hapi/release"
+ 	rls "k8s.io/helm/pkg/proto/hapi/services"
+@@ -68,6 +67,8 @@ type options struct {
+ 	contentReq rls.GetReleaseContentRequest
+ 	// release rollback options are applied directly to the rollback release request
+ 	rollbackReq rls.RollbackReleaseRequest
++	// withContext adds metadata to context before sending
++	withContext func(context.Context) context.Context
+ 	// before intercepts client calls before sending
+ 	before func(context.Context, proto.Message) error
+ 	// release history options are applied directly to the get release history request
+@@ -95,6 +96,14 @@ func WithTLS(cfg *tls.Config) Option {
+ 	}
+ }
+ 
++// WithContext returns an option that allows adding metadata to context of a helm client rpc
++// before being sent OTA to tiller.
++func WithContext(fn func(context.Context) context.Context) Option {
++	return func(opts *options) {
++		opts.withContext = fn
++	}
++}
++
+ // BeforeCall returns an option that allows intercepting a helm client rpc
+ // before being sent OTA to tiller. The intercepting function should return
+ // an error to indicate that the call should not proceed or nil otherwise.
+diff --git a/pkg/kube/auth_header.go b/pkg/kube/auth_header.go
+new file mode 100644
+index 000000000..bf334086e
+--- /dev/null
++++ b/pkg/kube/auth_header.go
+@@ -0,0 +1,28 @@
++/*
++Copyright 2016 The Kubernetes Authors All rights reserved.
++
++Licensed under the Apache License, Version 2.0 (the "License");
++you may not use this file except in compliance with the License.
++You may obtain a copy of the License at
++
++    http://www.apache.org/licenses/LICENSE-2.0
++
++Unless required by applicable law or agreed to in writing, software
++distributed under the License is distributed on an "AS IS" BASIS,
++WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++See the License for the specific language governing permissions and
++limitations under the License.
++*/
++
++package kube
++
++//AuthHeader is key type for context
++type AuthKey string
++
++const (
++	Authorization   AuthKey = "authorization"
++	UserInfo        AuthKey = "k8s-user-info"
++	UserClient      AuthKey = "k8s-user-client"
++	SystemClient    AuthKey = "k8s-sys-client"
++	ImpersonateUser AuthKey = "k8s-impersonate-user"
++)
+diff --git a/pkg/kube/client.go b/pkg/kube/client.go
+index 04e28e816..3d418a342 100644
+--- a/pkg/kube/client.go
++++ b/pkg/kube/client.go
+@@ -37,6 +37,7 @@ import (
+ 	"k8s.io/apimachinery/pkg/types"
+ 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+ 	"k8s.io/apimachinery/pkg/watch"
++	"k8s.io/client-go/discovery"
+ 	"k8s.io/client-go/tools/clientcmd"
+ 	"k8s.io/kubernetes/pkg/api"
+ 	"k8s.io/kubernetes/pkg/api/v1"
+@@ -44,6 +45,7 @@ import (
+ 	batchinternal "k8s.io/kubernetes/pkg/apis/batch"
+ 	batch "k8s.io/kubernetes/pkg/apis/batch/v1"
+ 	"k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
++	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authorization/internalversion"
+ 	conditions "k8s.io/kubernetes/pkg/client/unversioned"
+ 	"k8s.io/kubernetes/pkg/kubectl"
+ 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+@@ -75,6 +77,24 @@ func New(config clientcmd.ClientConfig) *Client {
+ // ResourceActorFunc performs an action on a single resource.
+ type ResourceActorFunc func(*resource.Info) error
+ 
++// Discovery retrieves the DiscoveryClient
++func (c *Client) Discovery() (discovery.DiscoveryInterface, error) {
++	client, err := c.ClientSet()
++	if err != nil {
++		return nil, err
++	}
++	return client.Discovery(), nil
++}
++
++// Authorization retrieves the AuthorizationInterface
++func (c *Client) Authorization() (internalversion.AuthorizationInterface, error) {
++	client, err := c.ClientSet()
++	if err != nil {
++		return nil, err
++	}
++	return client.Authorization(), nil
++}
++
+ // Create creates kubernetes resources from an io.reader
+ //
+ // Namespace will set the namespace
+diff --git a/pkg/proto/hapi/release/info.pb.go b/pkg/proto/hapi/release/info.pb.go
+index 9485ad058..b0f5f7c61 100644
+--- a/pkg/proto/hapi/release/info.pb.go
++++ b/pkg/proto/hapi/release/info.pb.go
+@@ -23,6 +23,8 @@ type Info struct {
+ 	Deleted *google_protobuf.Timestamp `protobuf:"bytes,4,opt,name=deleted" json:"deleted,omitempty"`
+ 	// Description is human-friendly "log entry" about this release.
+ 	Description string `protobuf:"bytes,5,opt,name=Description" json:"Description,omitempty"`
++	// Username is the authenticated user who performed this release.
++	Username string `protobuf:"bytes,6,opt,name=Username" json:"Username,omitempty"`
+ }
+ 
+ func (m *Info) Reset()                    { *m = Info{} }
+@@ -65,6 +67,13 @@ func (m *Info) GetDescription() string {
+ 	return ""
+ }
+ 
++func (m *Info) GetUsername() string {
++	if m != nil {
++		return m.Username
++	}
++	return ""
++}
++
+ func init() {
+ 	proto.RegisterType((*Info)(nil), "hapi.release.Info")
+ }
+@@ -72,20 +81,21 @@ func init() {
+ func init() { proto.RegisterFile("hapi/release/info.proto", fileDescriptor1) }
+ 
+ var fileDescriptor1 = []byte{
+-	// 235 bytes of a gzipped FileDescriptorProto
+-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x8f, 0x31, 0x4f, 0xc3, 0x30,
+-	0x10, 0x85, 0x95, 0x52, 0x5a, 0xd5, 0x6d, 0x19, 0x2c, 0x24, 0x42, 0x16, 0x22, 0xa6, 0x0e, 0xc8,
+-	0x91, 0x80, 0x1d, 0x81, 0xba, 0xb0, 0x06, 0x26, 0x16, 0xe4, 0xe2, 0x73, 0xb1, 0xe4, 0xe6, 0x2c,
+-	0xfb, 0x3a, 0xf0, 0x2f, 0xf8, 0xc9, 0xa8, 0xb6, 0x83, 0xd2, 0xa9, 0xab, 0xbf, 0xf7, 0x3e, 0xbf,
+-	0x63, 0x57, 0xdf, 0xd2, 0x99, 0xc6, 0x83, 0x05, 0x19, 0xa0, 0x31, 0x9d, 0x46, 0xe1, 0x3c, 0x12,
+-	0xf2, 0xc5, 0x01, 0x88, 0x0c, 0xaa, 0x9b, 0x2d, 0xe2, 0xd6, 0x42, 0x13, 0xd9, 0x66, 0xaf, 0x1b,
+-	0x32, 0x3b, 0x08, 0x24, 0x77, 0x2e, 0xc5, 0xab, 0xeb, 0x23, 0x4f, 0x20, 0x49, 0xfb, 0x90, 0xd0,
+-	0xed, 0xef, 0x88, 0x8d, 0x5f, 0x3b, 0x8d, 0xfc, 0x8e, 0x4d, 0x12, 0x28, 0x8b, 0xba, 0x58, 0xcd,
+-	0xef, 0x2f, 0xc5, 0xf0, 0x0f, 0xf1, 0x16, 0x59, 0x9b, 0x33, 0xfc, 0x99, 0x5d, 0x68, 0xe3, 0x03,
+-	0x7d, 0x2a, 0x70, 0x16, 0x7f, 0x40, 0x95, 0xa3, 0xd8, 0xaa, 0x44, 0xda, 0x22, 0xfa, 0x2d, 0xe2,
+-	0xbd, 0xdf, 0xd2, 0x2e, 0x63, 0x63, 0x9d, 0x0b, 0xfc, 0x89, 0x2d, 0xad, 0x1c, 0x1a, 0xce, 0x4e,
+-	0x1a, 0x16, 0x87, 0xc2, 0xbf, 0xe0, 0x91, 0x4d, 0x15, 0x58, 0x20, 0x50, 0xe5, 0xf8, 0x64, 0xb5,
+-	0x8f, 0xf2, 0x9a, 0xcd, 0xd7, 0x10, 0xbe, 0xbc, 0x71, 0x64, 0xb0, 0x2b, 0xcf, 0xeb, 0x62, 0x35,
+-	0x6b, 0x87, 0x4f, 0x2f, 0xb3, 0x8f, 0x69, 0xbe, 0x7a, 0x33, 0x89, 0xa6, 0x87, 0xbf, 0x00, 0x00,
+-	0x00, 0xff, 0xff, 0x1a, 0x52, 0x8f, 0x9c, 0x89, 0x01, 0x00, 0x00,
++	// 249 bytes of a gzipped FileDescriptorProto
++	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x90, 0x31, 0x4f, 0xc3, 0x30,
++	0x10, 0x85, 0x95, 0x52, 0x52, 0xea, 0xb6, 0x0c, 0x16, 0x12, 0x26, 0x0b, 0x11, 0x53, 0x07, 0xe4,
++	0x48, 0xc0, 0x8e, 0x40, 0x5d, 0x58, 0x03, 0x2c, 0x2c, 0xc8, 0x25, 0x97, 0x62, 0xc9, 0xc9, 0x59,
++	0xf6, 0x75, 0xe0, 0x3f, 0xf1, 0x23, 0x51, 0x1d, 0xa7, 0x0a, 0x53, 0xc6, 0xe4, 0x7b, 0xdf, 0xbb,
++	0x27, 0xb3, 0xcb, 0x6f, 0x65, 0x75, 0xe1, 0xc0, 0x80, 0xf2, 0x50, 0xe8, 0xb6, 0x46, 0x69, 0x1d,
++	0x12, 0xf2, 0xe5, 0x01, 0xc8, 0x08, 0xb2, 0xeb, 0x1d, 0xe2, 0xce, 0x40, 0x11, 0xd8, 0x76, 0x5f,
++	0x17, 0xa4, 0x1b, 0xf0, 0xa4, 0x1a, 0xdb, 0xc5, 0xb3, 0xab, 0x7f, 0x3d, 0x9e, 0x14, 0xed, 0x7d,
++	0x87, 0x6e, 0x7e, 0x27, 0x6c, 0xfa, 0xd2, 0xd6, 0xc8, 0x6f, 0x59, 0xda, 0x01, 0x91, 0xe4, 0xc9,
++	0x7a, 0x71, 0x77, 0x21, 0x87, 0x37, 0xe4, 0x6b, 0x60, 0x65, 0xcc, 0xf0, 0x27, 0x76, 0x5e, 0x6b,
++	0xe7, 0xe9, 0xb3, 0x02, 0x6b, 0xf0, 0x07, 0x2a, 0x31, 0x09, 0x56, 0x26, 0xbb, 0x2d, 0xb2, 0xdf,
++	0x22, 0xdf, 0xfa, 0x2d, 0xe5, 0x2a, 0x18, 0x9b, 0x28, 0xf0, 0x47, 0xb6, 0x32, 0x6a, 0xd8, 0x70,
++	0x32, 0xda, 0xb0, 0x3c, 0x08, 0xc7, 0x82, 0x07, 0x36, 0xab, 0xc0, 0x00, 0x41, 0x25, 0xa6, 0xa3,
++	0x6a, 0x1f, 0xe5, 0x39, 0x5b, 0x6c, 0xc0, 0x7f, 0x39, 0x6d, 0x49, 0x63, 0x2b, 0x4e, 0xf3, 0x64,
++	0x3d, 0x2f, 0x87, 0xbf, 0x78, 0xc6, 0xce, 0xde, 0x3d, 0xb8, 0x56, 0x35, 0x20, 0xd2, 0x80, 0x8f,
++	0xdf, 0xcf, 0xf3, 0x8f, 0x59, 0x7c, 0x91, 0x6d, 0x1a, 0xae, 0xdc, 0xff, 0x05, 0x00, 0x00, 0xff,
++	0xff, 0xf4, 0x9e, 0xd9, 0x9e, 0xa5, 0x01, 0x00, 0x00,
+ }
+diff --git a/pkg/releasetesting/environment_test.go b/pkg/releasetesting/environment_test.go
+index 29ca93d09..44a6db07f 100644
+--- a/pkg/releasetesting/environment_test.go
++++ b/pkg/releasetesting/environment_test.go
+@@ -117,12 +117,10 @@ type MockTestingEnvironment struct {
+ }
+ 
+ func newMockTestingEnvironment() *MockTestingEnvironment {
+-	tEnv := mockTillerEnvironment()
+-
+ 	return &MockTestingEnvironment{
+ 		Environment: &Environment{
+ 			Namespace:  "default",
+-			KubeClient: tEnv.KubeClient,
++			KubeClient: newPodSucceededKubeClient(),
+ 			Timeout:    5,
+ 			Stream:     &mockStream{},
+ 		},
+diff --git a/pkg/releasetesting/test_suite_test.go b/pkg/releasetesting/test_suite_test.go
+index 58055345d..eb5fe0eb3 100644
+--- a/pkg/releasetesting/test_suite_test.go
++++ b/pkg/releasetesting/test_suite_test.go
+@@ -293,7 +293,6 @@ func testEnvFixture() *Environment {
+ func mockTillerEnvironment() *tillerEnv.Environment {
+ 	e := tillerEnv.New()
+ 	e.Releases = storage.Init(driver.NewMemory())
+-	e.KubeClient = newPodSucceededKubeClient()
+ 	return e
+ }
+ 
+diff --git a/pkg/tiller/release_install.go b/pkg/tiller/release_install.go
+index 79b7b6354..13efd51eb 100644
+--- a/pkg/tiller/release_install.go
++++ b/pkg/tiller/release_install.go
+@@ -44,6 +44,7 @@ func (s *ReleaseServer) InstallRelease(c ctx.Context, req *services.InstallRelea
+ 		}
+ 		return res, err
+ 	}
++	rel.Info.Username = getUserName(c)
+ 
+ 	s.Log("performing install for %s", req.Name)
+ 	res, err := s.performRelease(rel, req)
+diff --git a/pkg/tiller/release_rollback.go b/pkg/tiller/release_rollback.go
+index 43e06a6b6..8260a0ce8 100644
+--- a/pkg/tiller/release_rollback.go
++++ b/pkg/tiller/release_rollback.go
+@@ -39,6 +39,7 @@ func (s *ReleaseServer) RollbackRelease(c ctx.Context, req *services.RollbackRel
+ 	if err != nil {
+ 		return nil, err
+ 	}
++	targetRelease.Info.Username = getUserName(c)
+ 
+ 	s.Log("performing rollback of %s", req.Name)
+ 	res, err := s.performRollback(currentRelease, targetRelease, req)
+diff --git a/pkg/tiller/release_uninstall.go b/pkg/tiller/release_uninstall.go
+index 54971ee6e..1df76e8b8 100644
+--- a/pkg/tiller/release_uninstall.go
++++ b/pkg/tiller/release_uninstall.go
+@@ -107,6 +107,7 @@ func (s *ReleaseServer) UninstallRelease(c ctx.Context, req *services.UninstallR
+ 
+ 	rel.Info.Status.Code = release.Status_DELETED
+ 	rel.Info.Description = "Deletion complete"
++	rel.Info.Username = getUserName(c)
+ 
+ 	if req.Purge {
+ 		s.Log("purge requested for %s", req.Name)
+diff --git a/pkg/tiller/release_update.go b/pkg/tiller/release_update.go
+index fb30d1661..fe9bea041 100644
+--- a/pkg/tiller/release_update.go
++++ b/pkg/tiller/release_update.go
+@@ -40,6 +40,7 @@ func (s *ReleaseServer) UpdateRelease(c ctx.Context, req *services.UpdateRelease
+ 	if err != nil {
+ 		return nil, err
+ 	}
++	updatedRelease.Info.Username = getUserName(c)
+ 
+ 	s.Log("performing update for %s", req.Name)
+ 	res, err := s.performUpdate(currentRelease, updatedRelease, req)
+diff --git a/pkg/tiller/server.go b/pkg/tiller/server.go
+index 8d6b6fa13..18d934cd3 100644
+--- a/pkg/tiller/server.go
++++ b/pkg/tiller/server.go
+@@ -17,15 +17,27 @@ limitations under the License.
+ package tiller
+ 
+ import (
++	"encoding/base64"
++	"errors"
+ 	"fmt"
++	"io/ioutil"
+ 	"log"
++	"os"
+ 	"strings"
+ 
+ 	goprom "github.com/grpc-ecosystem/go-grpc-prometheus"
+ 	"golang.org/x/net/context"
+ 	"google.golang.org/grpc"
++	"google.golang.org/grpc/credentials"
+ 	"google.golang.org/grpc/metadata"
++	"google.golang.org/grpc/peer"
++	apierrors "k8s.io/apimachinery/pkg/api/errors"
++	"k8s.io/client-go/rest"
++	"k8s.io/client-go/tools/clientcmd"
++	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
++	authenticationapi "k8s.io/kubernetes/pkg/apis/authentication"
+ 
++	"k8s.io/helm/pkg/kube"
+ 	"k8s.io/helm/pkg/version"
+ )
+ 
+@@ -34,42 +46,96 @@ import (
+ var maxMsgSize = 1024 * 1024 * 20
+ 
+ // DefaultServerOpts returns the set of default grpc ServerOption's that Tiller requires.
+-func DefaultServerOpts() []grpc.ServerOption {
++func DefaultServerOpts(sysCli *kube.Client) []grpc.ServerOption {
+ 	return []grpc.ServerOption{
+ 		grpc.MaxMsgSize(maxMsgSize),
+-		grpc.UnaryInterceptor(newUnaryInterceptor()),
+-		grpc.StreamInterceptor(newStreamInterceptor()),
++		grpc.UnaryInterceptor(newUnaryInterceptor(sysCli)),
++		grpc.StreamInterceptor(newStreamInterceptor(sysCli)),
+ 	}
+ }
+ 
+ // NewServer creates a new grpc server.
+-func NewServer(opts ...grpc.ServerOption) *grpc.Server {
+-	return grpc.NewServer(append(DefaultServerOpts(), opts...)...)
++func NewServer(sysCli *kube.Client, opts ...grpc.ServerOption) *grpc.Server {
++	return grpc.NewServer(append(DefaultServerOpts(sysCli), opts...)...)
+ }
+ 
+-func newUnaryInterceptor() grpc.UnaryServerInterceptor {
++func authenticate(c context.Context, sysCli *kube.Client) (context.Context, error) {
++	md, ok := metadata.FromContext(c)
++	if !ok {
++		return nil, errors.New("Missing metadata in context.")
++	}
++
++	var err error
++	authHeader, ok := md[string(kube.Authorization)]
++	if !ok || len(authHeader) == 0 || authHeader[0] == "" {
++		c, err = checkClientCert(c, sysCli)
++	} else {
++		if strings.HasPrefix(authHeader[0], "Bearer ") {
++			c, err = checkBearerAuth(c, authHeader[0], sysCli)
++		} else if strings.HasPrefix(authHeader[0], "Basic ") {
++			c, err = checkBasicAuth(c, authHeader[0], sysCli)
++		} else {
++			return nil, errors.New("Unknown authorization scheme.")
++		}
++	}
++	return c, err
++}
++
++func newUnaryInterceptor(sysCli *kube.Client) grpc.UnaryServerInterceptor {
+ 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+-		if err := checkClientVersion(ctx); err != nil {
++		err = checkClientVersion(ctx)
++		if err != nil {
+ 			// whitelist GetVersion() from the version check
+ 			if _, m := splitMethod(info.FullMethod); m != "GetVersion" {
+ 				log.Println(err)
+ 				return nil, err
+ 			}
+ 		}
++		ctx, err = authenticate(ctx, sysCli)
++		if err != nil {
++			log.Println(err)
++			return nil, err
++		}
+ 		return goprom.UnaryServerInterceptor(ctx, req, info, handler)
+ 	}
+ }
+ 
+-func newStreamInterceptor() grpc.StreamServerInterceptor {
++func newStreamInterceptor(sysCli *kube.Client) grpc.StreamServerInterceptor {
+ 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+-		if err := checkClientVersion(ss.Context()); err != nil {
++		ctx := ss.Context()
++		err := checkClientVersion(ctx)
++		if err != nil {
++			log.Println(err)
++			return err
++		}
++		ctx, err = authenticate(ctx, sysCli)
++		if err != nil {
+ 			log.Println(err)
+ 			return err
+ 		}
+-		return goprom.StreamServerInterceptor(srv, ss, info, handler)
++
++		newStream := serverStreamWrapper{
++			ss:  ss,
++			ctx: ctx,
++		}
++		return goprom.StreamServerInterceptor(srv, newStream, info, handler)
+ 	}
+ }
+ 
++// serverStreamWrapper wraps original ServerStream but uses modified context.
++// this modified context will be available inside handler()
++type serverStreamWrapper struct {
++	ss  grpc.ServerStream
++	ctx context.Context
++}
++
++func (w serverStreamWrapper) Context() context.Context        { return w.ctx }
++func (w serverStreamWrapper) RecvMsg(msg interface{}) error   { return w.ss.RecvMsg(msg) }
++func (w serverStreamWrapper) SendMsg(msg interface{}) error   { return w.ss.SendMsg(msg) }
++func (w serverStreamWrapper) SendHeader(md metadata.MD) error { return w.ss.SendHeader(md) }
++func (w serverStreamWrapper) SetHeader(md metadata.MD) error  { return w.ss.SetHeader(md) }
++func (w serverStreamWrapper) SetTrailer(md metadata.MD)       { w.ss.SetTrailer(md) }
++
+ func splitMethod(fullMethod string) (string, string) {
+ 	if frags := strings.Split(fullMethod, "/"); len(frags) == 3 {
+ 		return frags[1], frags[2]
+@@ -93,3 +159,173 @@ func checkClientVersion(ctx context.Context) error {
+ 	}
+ 	return nil
+ }
++
++func checkBearerAuth(c context.Context, h string, sysCli *kube.Client) (context.Context, error) {
++	token := h[len("Bearer "):]
++
++	clientset, err := sysCli.ClientSet()
++	if err != nil {
++		return c, err
++	}
++
++	// verify token
++	tokenReq := &authenticationapi.TokenReview{
++		Spec: authenticationapi.TokenReviewSpec{
++			Token: token,
++		},
++	}
++	result, err := clientset.Authentication().TokenReviews().Create(tokenReq)
++	if err != nil && !apierrors.IsNotFound(err) {
++		return c, err
++	} else if err == nil && !result.Status.Authenticated {
++		return c, errors.New("Not authenticated")
++	}
++
++	syscfg, err := sysCli.ClientConfig()
++	if err != nil {
++		return c, err
++	}
++	usrcfg := &rest.Config{
++		Host:        syscfg.Host,
++		APIPath:     syscfg.APIPath,
++		Prefix:      syscfg.Prefix,
++		BearerToken: token,
++	}
++	usrcfg.TLSClientConfig.CertData = syscfg.TLSClientConfig.CertData
++
++	c = context.WithValue(c, kube.UserInfo, &result.Status.User)
++	c = context.WithValue(c, kube.UserClient, kube.New(&wrapClientConfig{cfg: usrcfg}))
++	c = context.WithValue(c, kube.SystemClient, sysCli)
++	return c, nil
++}
++
++func checkBasicAuth(c context.Context, h string, sysCli *kube.Client) (context.Context, error) {
++	basicAuth, err := base64.StdEncoding.DecodeString(h[len("Basic "):])
++	if err != nil {
++		return c, err
++	}
++	username, password := getUserPasswordFromBasicAuth(string(basicAuth))
++	if len(username) == 0 || len(password) == 0 {
++		return c, errors.New("Missing username or password.")
++	}
++
++	syscfg, err := sysCli.ClientConfig()
++	if err != nil {
++		return c, err
++	}
++	usrcfg := &rest.Config{
++		Host:     syscfg.Host,
++		APIPath:  syscfg.APIPath,
++		Prefix:   syscfg.Prefix,
++		Username: username,
++		Password: password,
++	}
++	usrcfg.TLSClientConfig.CertData = syscfg.TLSClientConfig.CertData
++
++	usrClient := kube.New(&wrapClientConfig{cfg: usrcfg})
++	clientset, err := usrClient.ClientSet()
++	if err != nil {
++		return c, err
++	}
++
++	// verify credentials
++	_, err = clientset.Discovery().ServerVersion()
++	if err != nil {
++		return c, err
++	}
++
++	c = context.WithValue(c, kube.UserInfo, &authenticationapi.UserInfo{
++		Username: username,
++	})
++	c = context.WithValue(c, kube.UserClient, usrClient)
++	c = context.WithValue(c, kube.SystemClient, sysCli)
++	return c, nil
++}
++
++func getUserPasswordFromBasicAuth(token string) (string, string) {
++	st := strings.SplitN(token, ":", 2)
++	if len(st) == 2 {
++		return st[0], st[1]
++	}
++	return "", ""
++}
++
++func checkClientCert(c context.Context, sysCli *kube.Client) (context.Context, error) {
++	// ref: https://github.com/grpc/grpc-go/issues/111#issuecomment-275820771
++	peer, ok := peer.FromContext(c)
++	if !ok {
++		return c, errors.New("No peer found!")
++	}
++	tlsInfo, ok := peer.AuthInfo.(credentials.TLSInfo)
++	if !ok {
++		return c, errors.New("No TLS credential found!")
++	}
++	if len(tlsInfo.State.VerifiedChains) == 0 || len(tlsInfo.State.VerifiedChains[0]) == 0 {
++		return c, errors.New("No verified client certificate found!")
++	}
++
++	crt := tlsInfo.State.VerifiedChains[0][0]
++	user := authenticationapi.UserInfo{
++		Username: crt.Subject.CommonName,
++	}
++	syscfg, err := sysCli.ClientConfig()
++	if err != nil {
++		return c, err
++	}
++	usrcfg := *syscfg
++	usrcfg.Impersonate.UserName = crt.Subject.CommonName
++
++	c = context.WithValue(c, kube.UserInfo, &user)
++	c = context.WithValue(c, kube.UserClient, kube.New(&wrapClientConfig{cfg: &usrcfg}))
++	c = context.WithValue(c, kube.SystemClient, sysCli)
++	c = context.WithValue(c, kube.ImpersonateUser, struct{}{})
++	return c, nil
++}
++
++// wrapClientConfig makes a config that wraps a kubeconfig
++type wrapClientConfig struct {
++	cfg *rest.Config
++}
++
++var _ clientcmd.ClientConfig = wrapClientConfig{}
++
++func (wrapClientConfig) RawConfig() (clientcmdapi.Config, error) {
++	return clientcmdapi.Config{}, fmt.Errorf("inCluster environment config doesn't support multiple clusters")
++}
++
++func (w wrapClientConfig) ClientConfig() (*rest.Config, error) {
++	return w.cfg, nil
++}
++
++func (wrapClientConfig) Namespace() (string, bool, error) {
++	// This way assumes you've set the POD_NAMESPACE environment variable using the downward API.
++	// This check has to be done first for backwards compatibility with the way InClusterConfig was originally set up
++	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
++		return ns, true, nil
++	}
++
++	// Fall back to the namespace associated with the service account token, if available
++	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
++		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
++			return ns, true, nil
++		}
++	}
++
++	return "default", false, nil
++}
++
++func (wrapClientConfig) ConfigAccess() clientcmd.ConfigAccess {
++	return clientcmd.NewDefaultClientConfigLoadingRules()
++}
++
++func getUserName(c context.Context) string {
++	user := c.Value(kube.UserInfo)
++	if user == nil {
++		return ""
++	}
++	userInfo, ok := user.(*authenticationapi.UserInfo)
++	if !ok {
++		return ""
++	}
++	return userInfo.Username
++}
