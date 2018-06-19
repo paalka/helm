@@ -67,7 +67,7 @@ func (mem *Memory) Get(key string) (*rspb.Release, error) {
 }
 
 // List returns the list of all releases such that filter(release) == true
-func (mem *Memory) List(filter func(*rspb.Release) bool) ([]*rspb.Release, error) {
+func (mem *Memory) List(namespace string, filter func(*rspb.Release) bool) ([]*rspb.Release, error) {
 	defer unlock(mem.rlock())
 
 	var ls []*rspb.Release

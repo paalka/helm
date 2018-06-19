@@ -65,7 +65,7 @@ type Deletor interface {
 // Query returns the set of all releases that match the provided label set.
 type Queryor interface {
 	Get(key string) (*rspb.Release, error)
-	List(filter func(*rspb.Release) bool) ([]*rspb.Release, error)
+	List(namespace string, filter func(*rspb.Release) bool) ([]*rspb.Release, error)
 	Query(labels map[string]string) ([]*rspb.Release, error)
 }
 
