@@ -32,7 +32,7 @@ func (s *ReleaseServer) ListReleases(req *services.ListReleasesRequest, stream s
 	}
 
 	//rels, err := s.env.Releases.ListDeployed()
-	rels, err := s.env.Releases.ListFilterAll(func(r *release.Release) bool {
+	rels, err := s.env.Releases.ListFilterAll(req.Namespace, func(r *release.Release) bool {
 		for _, sc := range req.StatusCodes {
 			if sc == r.Info.Status.Code {
 				return true
@@ -42,13 +42,6 @@ func (s *ReleaseServer) ListReleases(req *services.ListReleasesRequest, stream s
 	})
 	if err != nil {
 		return err
-	}
-
-	if req.Namespace != "" {
-		rels, err = filterByNamespace(req.Namespace, rels)
-		if err != nil {
-			return err
-		}
 	}
 
 	if len(req.Filter) != 0 {

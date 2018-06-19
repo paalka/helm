@@ -94,7 +94,7 @@ func TestConfigMapList(t *testing.T) {
 	}...)
 
 	// list all deleted releases
-	del, err := cfgmaps.List(func(rel *rspb.Release) bool {
+	del, err := cfgmaps.List("", func(rel *rspb.Release) bool {
 		return rel.Info.Status.Code == rspb.Status_DELETED
 	})
 	// check
@@ -106,7 +106,7 @@ func TestConfigMapList(t *testing.T) {
 	}
 
 	// list all deployed releases
-	dpl, err := cfgmaps.List(func(rel *rspb.Release) bool {
+	dpl, err := cfgmaps.List("", func(rel *rspb.Release) bool {
 		return rel.Info.Status.Code == rspb.Status_DEPLOYED
 	})
 	// check
@@ -118,7 +118,7 @@ func TestConfigMapList(t *testing.T) {
 	}
 
 	// list all superseded releases
-	ssd, err := cfgmaps.List(func(rel *rspb.Release) bool {
+	ssd, err := cfgmaps.List("", func(rel *rspb.Release) bool {
 		return rel.Info.Status.Code == rspb.Status_SUPERSEDED
 	})
 	// check
