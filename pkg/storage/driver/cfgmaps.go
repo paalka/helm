@@ -84,9 +84,14 @@ func (cfgmaps *ConfigMaps) Get(key string) (*rspb.Release, error) {
 // List fetches all releases and returns the list releases such
 // that filter(release) == true. An error is returned if the
 // configmap fails to retrieve the releases.
-func (cfgmaps *ConfigMaps) List(filter func(*rspb.Release) bool) ([]*rspb.Release, error) {
-	lsel := kblabels.Set{"OWNER": "TILLER"}.AsSelector()
-	opts := metav1.ListOptions{LabelSelector: lsel.String()}
+func (cfgmaps *ConfigMaps) List(namespace string, filter func(*rspb.Release) bool) ([]*rspb.Release, error) {
+	labels := map[string]string{"OWNER": "TILLER"}
+	if namespace != "" {
+		labels["NAMESPACE"] = namespace
+	}
+
+	lsel := kblabels.Set(labels)
+	opts := metav1.ListOptions{LabelSelector: lsel.AsSelector().String()}
 
 	list, err := cfgmaps.impl.List(opts)
 	if err != nil {
@@ -223,6 +228,7 @@ func (cfgmaps *ConfigMaps) Delete(key string) (rls *rspb.Release, err error) {
 //
 //    "MODIFIED_AT"    - timestamp indicating when this configmap was last modified. (set in Update)
 //    "CREATED_AT"     - timestamp indicating when this configmap was created. (set in Create)
+//    "NAMESPACE"      - the namespace the release is using.
 //    "VERSION"        - version of the release.
 //    "STATUS"         - status of the release (see proto/hapi/release.status.pb.go for variants)
 //    "OWNER"          - owner of the configmap, currently "TILLER".
@@ -246,6 +252,7 @@ func newConfigMapsObject(key string, rls *rspb.Release, lbs labels) (*core.Confi
 	lbs.set("OWNER", owner)
 	lbs.set("STATUS", rspb.Status_Code_name[int32(rls.Info.Status.Code)])
 	lbs.set("VERSION", strconv.Itoa(int(rls.Version)))
+	lbs.set("NAMESPACE", rls.Namespace)
 
 	// create and return configmap object
 	return &core.ConfigMap{

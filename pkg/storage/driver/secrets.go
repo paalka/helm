@@ -84,9 +84,14 @@ func (secrets *Secrets) Get(key string) (*rspb.Release, error) {
 // List fetches all releases and returns the list releases such
 // that filter(release) == true. An error is returned if the
 // secret fails to retrieve the releases.
-func (secrets *Secrets) List(filter func(*rspb.Release) bool) ([]*rspb.Release, error) {
-	lsel := kblabels.Set{"OWNER": "TILLER"}.AsSelector()
-	opts := metav1.ListOptions{LabelSelector: lsel.String()}
+func (secrets *Secrets) List(namespace string, filter func(*rspb.Release) bool) ([]*rspb.Release, error) {
+	labels := map[string]string{"OWNER": "TILLER"}
+	if namespace != "" {
+		labels["NAMESPACE"] = namespace
+	}
+
+	lsel := kblabels.Set(labels)
+	opts := metav1.ListOptions{LabelSelector: lsel.AsSelector().String()}
 
 	list, err := secrets.impl.List(opts)
 	if err != nil {

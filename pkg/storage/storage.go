@@ -75,25 +75,25 @@ func (s *Storage) Delete(name string, version int32) (*rspb.Release, error) {
 
 // ListReleases returns all releases from storage. An error is returned if the
 // storage backend fails to retrieve the releases.
-func (s *Storage) ListReleases() ([]*rspb.Release, error) {
+func (s *Storage) ListReleases(namespace string) ([]*rspb.Release, error) {
 	s.Log("listing all releases in storage")
-	return s.Driver.List(func(_ *rspb.Release) bool { return true })
+	return s.Driver.List(namespace, func(_ *rspb.Release) bool { return true })
 }
 
 // ListDeleted returns all releases with Status == DELETED. An error is returned
 // if the storage backend fails to retrieve the releases.
-func (s *Storage) ListDeleted() ([]*rspb.Release, error) {
+func (s *Storage) ListDeleted(namespace string) ([]*rspb.Release, error) {
 	s.Log("listing deleted releases in storage")
-	return s.Driver.List(func(rls *rspb.Release) bool {
+	return s.Driver.List(namespace, func(rls *rspb.Release) bool {
 		return relutil.StatusFilter(rspb.Status_DELETED).Check(rls)
 	})
 }
 
 // ListDeployed returns all releases with Status == DEPLOYED. An error is returned
 // if the storage backend fails to retrieve the releases.
-func (s *Storage) ListDeployed() ([]*rspb.Release, error) {
+func (s *Storage) ListDeployed(namespace string) ([]*rspb.Release, error) {
 	s.Log("listing all deployed releases in storage")
-	return s.Driver.List(func(rls *rspb.Release) bool {
+	return s.Driver.List(namespace, func(rls *rspb.Release) bool {
 		return relutil.StatusFilter(rspb.Status_DEPLOYED).Check(rls)
 	})
 }
@@ -101,9 +101,9 @@ func (s *Storage) ListDeployed() ([]*rspb.Release, error) {
 // ListFilterAll returns the set of releases satisfying the predicate
 // (filter0 && filter1 && ... && filterN), i.e. a Release is included in the results
 // if and only if all filters return true.
-func (s *Storage) ListFilterAll(fns ...relutil.FilterFunc) ([]*rspb.Release, error) {
+func (s *Storage) ListFilterAll(namespace string, fns ...relutil.FilterFunc) ([]*rspb.Release, error) {
 	s.Log("listing all releases with filter")
-	return s.Driver.List(func(rls *rspb.Release) bool {
+	return s.Driver.List(namespace, func(rls *rspb.Release) bool {
 		return relutil.All(fns...).Check(rls)
 	})
 }
@@ -111,9 +111,9 @@ func (s *Storage) ListFilterAll(fns ...relutil.FilterFunc) ([]*rspb.Release, err
 // ListFilterAny returns the set of releases satisfying the predicate
 // (filter0 || filter1 || ... || filterN), i.e. a Release is included in the results
 // if at least one of the filters returns true.
-func (s *Storage) ListFilterAny(fns ...relutil.FilterFunc) ([]*rspb.Release, error) {
+func (s *Storage) ListFilterAny(namespace string, fns ...relutil.FilterFunc) ([]*rspb.Release, error) {
 	s.Log("listing any releases with filter")
-	return s.Driver.List(func(rls *rspb.Release) bool {
+	return s.Driver.List(namespace, func(rls *rspb.Release) bool {
 		return relutil.Any(fns...).Check(rls)
 	})
 }
