@@ -182,19 +182,10 @@ func checkBearerAuth(c context.Context, h string, sysCli *kube.Client) (context.
 		return c, errors.New("Not authenticated")
 	}
 
-	syscfg, err := sysCli.ClientConfig()
-	if err != nil {
-		return c, err
-	}
-	usrcfg := &rest.Config{
-		Host:        syscfg.Host,
-		APIPath:     syscfg.APIPath,
-		BearerToken: token,
-	}
-	usrcfg.TLSClientConfig = syscfg.TLSClientConfig
+	usrCli := kube.New(kube.GetConfigWithAuth(token))
 
 	c = context.WithValue(c, kube.UserInfo, &result.Status.User)
-	c = context.WithValue(c, kube.UserClient, kube.New(&wrapClientConfig{cfg: usrcfg}))
+	c = context.WithValue(c, kube.UserClient, usrCli)
 	c = context.WithValue(c, kube.SystemClient, sysCli)
 	return c, nil
 }

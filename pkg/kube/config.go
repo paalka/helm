@@ -30,3 +30,13 @@ func GetConfig(context string) clientcmd.ClientConfig {
 	}
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
 }
+
+func GetConfigWithAuth(token string) clientcmd.ClientConfig {
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+
+	overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}
+	overrides.AuthInfo.Token = token
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
+}
