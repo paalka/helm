@@ -79,6 +79,11 @@ func authenticate(c context.Context, sysCli *kube.Client) (context.Context, erro
 			return nil, errors.New("Unknown authorization scheme.")
 		}
 	}
+
+	email, ok := md["email"]
+	if ok {
+		c = context.WithValue(c, "email", email[0])
+	}
 	return c, err
 }
 
@@ -326,4 +331,13 @@ func getUserName(c context.Context) string {
 		return ""
 	}
 	return userInfo.Username
+}
+
+func getEmail(c context.Context) string {
+	email, ok := c.Value("email").(string)
+	if !ok {
+		return ""
+	}
+
+	return email
 }

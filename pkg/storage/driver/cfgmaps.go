@@ -257,8 +257,9 @@ func newConfigMapsObject(key string, rls *rspb.Release, lbs labels) (*core.Confi
 	// create and return configmap object
 	return &core.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   key,
-			Labels: lbs.toMap(),
+			Annotations: map[string]string{"helm/owner_email": rls.Info.GetEmail()},
+			Name:        key,
+			Labels:      lbs.toMap(),
 		},
 		Data: map[string]string{"release": s},
 	}, nil

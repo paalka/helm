@@ -37,4 +37,7 @@ message Info {
 
 	// Username is the authenticated user who performed this release.
 	string Username = 6;
+
+	// Email is the email of the authenticated user.
+	string Email = 7;
 }

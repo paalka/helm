@@ -48,6 +48,7 @@ func (s *ReleaseServer) InstallRelease(c ctx.Context, req *services.InstallRelea
 		return res, err
 	}
 	rel.Info.Username = getUserName(c)
+	rel.Info.Email = getEmail(c)
 
 	usrCli, err := getUserClient(c)
 	if err != nil {
