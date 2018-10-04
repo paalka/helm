@@ -20,6 +20,7 @@ ENV HOME /tmp
 
 COPY tiller /tiller
 
+USER nobody
 EXPOSE 44134
 
 CMD ["/tiller"]
